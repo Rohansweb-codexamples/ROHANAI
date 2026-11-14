@@ -3,6 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "node:path";
+import { randomBytes, randomInt } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 dotenv.config();
@@ -15,7 +16,95 @@ const CARTESIA_VERSION = "2026-08-14";
 app.disable("x-powered-by");
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(express.json({ limit: "12kb" }));
-app.use("/api", rateLimit({ windowMs: 60_000, limit: 35, standardHeaders: "draft-8", legacyHeaders: false }));
+app.use("/api", rateLimit({ windowMs: 60_000, limit: 180, standardHeaders: "draft-8", legacyHeaders: false }));
+
+const deviceSessions = new Map();
+const DEVICE_TTL = 12 * 60 * 60 * 1000;
+function cleanDeviceSessions() {
+  const now = Date.now();
+  for (const [code, session] of deviceSessions) {
+    if (now - session.createdAt > DEVICE_TTL) deviceSessions.delete(code);
+  }
+}
+function findDeviceByToken(token, role) {
+  if (typeof token !== "string") return null;
+  for (const session of deviceSessions.values()) {
+    if (role === "controller" && session.controllerToken === token) return session;
+    if (role === "speaker" && session.speakerToken === token) return session;
+  }
+  return null;
+}
+app.post("/api/device/create", (_req, res) => {
+  cleanDeviceSessions();
+  let code;
+  do { code = String(randomInt(100000, 1000000)); } while (deviceSessions.has(code));
+  const session = {
+    code, controllerToken: randomBytes(24).toString("hex"), speakerToken: "",
+    createdAt: Date.now(), lastSeen: 0, speakerConnected: false,
+    commands: [], state: { playing: false, track: "House", currentTime: 0, duration: 0, volume: 0.85 }
+  };
+  deviceSessions.set(code, session);
+  res.json({ ok: true, code, token: session.controllerToken, expiresIn: DEVICE_TTL });
+});
+app.post("/api/device/join", (req, res) => {
+  cleanDeviceSessions();
+  const code = String(req.body?.code || "").replace(/\D/g, "").slice(0, 6);
+  const session = deviceSessions.get(code);
+  if (!session) return res.status(404).json({ error: "That pairing code has expired or does not exist. Create a new code on the controller." });
+  if (session.speakerToken) return res.status(409).json({ error: "A speaker is already paired. Disconnect it from the controller first." });
+  session.speakerToken = randomBytes(24).toString("hex");
+  session.speakerConnected = true;
+  session.lastSeen = Date.now();
+  res.json({ ok: true, token: session.speakerToken, controllerConnected: true });
+});
+app.post("/api/device/command", (req, res) => {
+  const session = findDeviceByToken(req.body?.token, "controller");
+  if (!session) return res.status(401).json({ error: "Controller is not connected. Refresh and pair the speaker again." });
+  const command = req.body?.command;
+  const allowed = ["play", "pause", "next", "previous", "volume", "track"];
+  if (!command || !allowed.includes(command.type)) return res.status(400).json({ error: "Unsupported speaker command." });
+  if (command.type === "volume" && (!Number.isFinite(command.value) || command.value < 0 || command.value > 1)) return res.status(400).json({ error: "Volume must be between 0 and 1." });
+  if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value)) return res.status(400).json({ error: "That track is not available." });
+  session.commands.push({ id: randomBytes(8).toString("hex"), ...command, at: Date.now() });
+  if (session.commands.length > 30) session.commands.splice(0, session.commands.length - 30);
+  res.json({ ok: true });
+});
+app.post("/api/device/poll", (req, res) => {
+  const session = findDeviceByToken(req.body?.token, "speaker");
+  if (!session) return res.status(401).json({ error: "Speaker pairing has expired. Pair again from this page." });
+  session.lastSeen = Date.now();
+  session.speakerConnected = true;
+  const commands = session.commands.splice(0);
+  res.json({ ok: true, commands, controllerConnected: true });
+});
+app.post("/api/device/heartbeat", (req, res) => {
+  const session = findDeviceByToken(req.body?.token, "speaker");
+  if (!session) return res.status(401).json({ error: "Speaker pairing has expired." });
+  session.lastSeen = Date.now();
+  session.speakerConnected = true;
+  const input = req.body?.state || {};
+  session.state = {
+    playing: Boolean(input.playing),
+    track: typeof input.track === "string" ? input.track.slice(0, 60) : "House",
+    currentTime: Number.isFinite(input.currentTime) ? Math.max(0, input.currentTime) : 0,
+    duration: Number.isFinite(input.duration) ? Math.max(0, input.duration) : 0,
+    volume: Number.isFinite(input.volume) ? Math.min(1, Math.max(0, input.volume)) : 0.85
+  };
+  res.json({ ok: true });
+});
+app.post("/api/device/state", (req, res) => {
+  const session = findDeviceByToken(req.body?.token, "controller");
+  if (!session) return res.status(401).json({ error: "Controller session expired. Refresh this page to create a new pairing code." });
+  const connected = Boolean(session.speakerToken && session.speakerConnected && Date.now() - session.lastSeen < 15000);
+  res.json({ ok: true, connected, state: session.state, code: session.code });
+});
+app.post("/api/device/disconnect", (req, res) => {
+  const session = findDeviceByToken(req.body?.token, "controller");
+  if (!session) return res.status(401).json({ error: "Controller session expired." });
+  deviceSessions.delete(session.code);
+  res.json({ ok: true });
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/music.mp3", (_req, res) => res.sendFile(path.join(__dirname, "untitled-video-8_otfFPTjE.mp3")));
 
