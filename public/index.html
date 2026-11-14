@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=18">
+  <link rel="stylesheet" href="/styles.css?v=19">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -65,6 +65,7 @@
           <div class="quiz-orb"><span class="material-symbols-rounded">graphic_eq</span></div>
           <div class="quiz-copy"><span class="card-kicker">VOICE-POWERED CHALLENGE</span><h3 id="quizHeading">Ready for a quiz?</h3><p id="quizPrompt">Press Start audio quiz, then tap one of the topics. No microphone is needed.</p></div>
           <div class="quiz-topic-list" id="quizTopicList"><span>Choose a topic below</span></div><div class="quiz-choices" id="quizChoices" hidden></div>
+          <button class="soft-button quiz-voice-answer" id="quizVoiceAnswer" type="button" hidden><span class="material-symbols-rounded">mic</span> Answer by voice</button>
           <div class="quiz-progress"><span id="quizProgress">No quiz started</span><strong id="quizScore">Score: 0</strong></div>
           <button class="primary-button quiz-start" id="startAudioQuiz"><span class="material-symbols-rounded">mic</span> Start audio quiz</button>
           <button class="soft-button quiz-stop" id="stopAudioQuiz">End quiz</button>
@@ -132,6 +133,6 @@
     </div>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=27" defer></script>
+  <script src="/app.js?v=28" defer></script>
 </body>
 </html>
