@@ -96,7 +96,8 @@ app.post("/api/device/command", (req, res) => {
   const allowed = ["play", "pause", "next", "previous", "volume", "track"];
   if (!command || !allowed.includes(command.type)) return res.status(400).json({ error: "Unsupported speaker command." });
   if (command.type === "volume" && (!Number.isFinite(command.value) || command.value < 0 || command.value > 1)) return res.status(400).json({ error: "Volume must be between 0 and 1." });
-  if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value)) return res.status(400).json({ error: "That track is not available." });
+  if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value) && !(typeof command.value === "string" && /^\\/api\\/music\\/file\\/[a-f0-9]{24}\\.(mp3|wav|ogg|m4a|aac)$/.test(command.value))) return res.status(400).json({ error: "That track is not available." });
+  if (command.type === "track" && command.value.startsWith("/api/music/file/") && (typeof command.name !== "string" || !command.name.trim() || command.name.length > 80)) return res.status(400).json({ error: "Give your uploaded track a name." });
   session.commands.push({ id: randomBytes(8).toString("hex"), ...command, at: Date.now() });
   saveDeviceSessions();
   if (session.commands.length > 30) session.commands.splice(0, session.commands.length - 30);
@@ -142,6 +143,24 @@ app.post("/api/device/disconnect", (req, res) => {
   res.json({ ok: true });
 });
 
+// Personal music uploads are stored on the persistent Render data disk.
+app.post("/api/music/upload", express.raw({ type: "audio/*", limit: "40mb" }), (req, res) => {
+  if (!Buffer.isBuffer(req.body) || req.body.length < 1000) return res.status(400).json({ error: "Choose a valid audio file." });
+  const mime = String(req.headers["content-type"] || "").split(";")[0].toLowerCase();
+  const ext = ({ "audio/mpeg":"mp3", "audio/mp3":"mp3", "audio/wav":"wav", "audio/x-wav":"wav", "audio/ogg":"ogg", "audio/mp4":"m4a", "audio/aac":"aac", "audio/x-m4a":"m4a" })[mime];
+  if (!ext) return res.status(415).json({ error: "Use an MP3, WAV, OGG, M4A or AAC audio file." });
+  const filename = randomBytes(12).toString("hex") + "." + ext;
+  const dir = path.join(DATA_DIR, "music");
+  try { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, filename), req.body, { mode: 0o600 }); }
+  catch (error) { console.error("Music upload failed:", error.message); return res.status(500).json({ error: "Could not save that music file. Check the Render persistent disk." }); }
+  res.json({ ok: true, name: filename, url: "/api/music/file/" + filename, size: req.body.length });
+});
+app.get("/api/music/file/:filename", (req, res) => {
+  const filename = String(req.params.filename || "");
+  if (!/^[a-f0-9]{24}\\.(mp3|wav|ogg|m4a|aac)$/.test(filename)) return res.sendStatus(404);
+  res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  res.sendFile(path.join(DATA_DIR, "music", filename), error => { if (error && !res.headersSent) res.sendStatus(404); });
+});
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/music.mp3", (_req, res) => res.sendFile(path.join(__dirname, "untitled-video-8_otfFPTjE.mp3")));
 
