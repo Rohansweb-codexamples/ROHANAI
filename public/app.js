@@ -19,16 +19,16 @@ function setMood(mood,label){
   const title=$("#voiceScreenTitle"), detail=$("#voiceScreenText"), panel=$("#voiceScreen");
   if(title&&detail&&panel){
     panel.classList.toggle("is-active",mood==="listening"||mood==="speaking");
-    if(mood==="listening"){title.textContent=state.wake?"Listening for Hey Rowan":"I'm listening";detail.textContent="Speak clearly. I'm waiting for your request.";}
+    if(mood==="listening"){title.textContent="I'm listening";detail.textContent="Speak naturally. You do not need to say Rohan first.";}
     else if(mood==="speaking"){title.textContent="Rohan AI is speaking";detail.textContent="Playing your reply with Cartesia voice.";}
     else if(label.includes("UNAVAILABLE")||label.includes("NOT READY")){title.textContent="Voice needs attention";detail.textContent=$("#voiceNote")?.textContent||"Check the Cartesia connection.";}
     else {title.textContent="Your assistant is ready";detail.textContent="Press the large button to allow microphone access and speak.";}
   }
 }
-function resumeWakeListening(){if(!state.wake||state.listening||!state.recognition)return;try{state.recognition.start();state.listening=true;$("#listenLabel").textContent="ALWAYS LISTENING";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch(error){if(error.name==="InvalidStateError"){state.listening=true;return;}state.listening=false;clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.wake)resumeWakeListening();},1400);}}
+function resumeWakeListening(){if(!state.wake||state.listening||!state.recognition)return;try{state.recognition.start();state.listening=true;$("#listenLabel").textContent="LISTENING — SPEAK NOW";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch(error){if(error.name==="InvalidStateError"){state.listening=true;return;}state.listening=false;clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.wake)resumeWakeListening();},1400);}}
 async function speak(text){
-  if(!state.speak){if(state.wake)setTimeout(resumeWakeListening,500);return;}
-  const finish=()=>{state.speaking=false;setMood("","READY WHEN YOU ARE");if(state.wake)setTimeout(resumeWakeListening,500);};
+  if(!state.speak)return;
+  const finish=()=>{state.speaking=false;setMood("","READY WHEN YOU ARE");};
   if(!state.voiceId){$("#voiceNote").textContent="Cartesia voice is not connected. Replace the API key in Render, redeploy, then refresh this page.";setMood("","CARTESIA VOICE NOT READY");$("#voiceScreenTitle").textContent="Cartesia voice is not connected";$("#voiceScreenText").textContent=$("#voiceNote").textContent;finish();return;}
   try{
     const speechText=text.replace(/\bRohan\b/gi,"Rowan");
@@ -90,9 +90,9 @@ function handleCommand(raw){
   if(/(tell me|tell a|read me|make up|start|want) (a )?(short )?(bedtime |children's |kids' |young )?(story|tale)|\bstory time\b|\bfairy tale\b|\btell (me )?(a )?(kids|children's|young) story\b/.test(t)||t==="story"){
     tellStory();return;
   }
-  if(/(hello|hi rohan|hey rohan|good morning)/.test(t)){reply("Hello! Lovely to hear from you. What would you like to do?");return;}
+  if(/^(hello|hi|rohan|good morning|good afternoon|good evening)$/.test(t)){reply("Hello, Rohan. What would you like to do?");return;}
   if(/(what can you do|help|commands)/.test(t)){reply("I can open games, play music, tell you the time and date, change settings, and tell you a story. Try saying tell me a story, open games, play music, or what time is it.");return;}
-  if(/(time is it|current time)/.test(t)){reply("It's "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".");return;}
+  if(/(tell me the time|what(?:'s| is) the time|what time is it|time is it|current time|time please)/.test(t)){reply("It's "+new Date().toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit"})+".");return;}
   if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}
   if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}
   if(/(open|go to|show).*(music|song|player)/.test(t)||/play (some )?music|play (orange horizon|sunny side up|galaxy drift)/.test(t)){go("music");if(t.includes("sunny"))selectTrack("upbeat");else if(t.includes("galaxy"))selectTrack("space");else if(t.includes("orange"))selectTrack("focus");startMusic();reply("Music time! I've opened the music player. Your soundscape is ready.");return;}
@@ -128,7 +128,7 @@ function speechRecognition(){
   if(!SR)return null;
   const rec=new SR();
   rec.lang="en-GB";
-  rec.continuous=true;
+  rec.continuous=false;
   rec.interimResults=true;
   rec.maxAlternatives=5;
   rec.onstart=()=>{
@@ -137,8 +137,8 @@ function speechRecognition(){
       $("#listenLabel").textContent="ALWAYS LISTENING";
       $("#listenButton").classList.add("listening");
       setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");
-      $("#voiceScreenTitle").textContent="Listening for Hey Rowan";
-      $("#voiceScreenText").textContent="I'm listening. Say “Hey Rowan” followed by what you need.";
+      $("#voiceScreenTitle").textContent="Microphone is active";
+      $("#voiceScreenText").textContent="Say what you need now. No name or wake word is required.";
     }
   };
   rec.onresult=e=>{
@@ -228,11 +228,11 @@ async function startRecognition(wake=false){
   }
   if(!state.recognition)state.recognition=speechRecognition();
   state.wake=Boolean(wake);state.listening=true;state.wakeBuffer="";
-  state.recognition.continuous=true;
-  $("#listenLabel").textContent=wake?"CONNECTING MICROPHONE…":"LISTENING…";
+  state.recognition.continuous=false;
+  $("#listenLabel").textContent="CONNECTING MICROPHONE…";
   $("#listenButton").classList.add("listening");
-  setMood("listening",wake?"CONNECTING ALWAYS-ON LISTENING":"I'M LISTENING");
-  $("#orbSubtitle").textContent=wake?"Say “Hey Rowan” followed by your request.":"Go ahead — I'm listening.";
+  setMood("listening","CONNECTING MICROPHONE");
+  $("#orbSubtitle").textContent="Go ahead — say your request. You do not need to say Rohan.";
   startRecognitionEngine();
 }
 function resumeWakeListening(){
@@ -248,9 +248,9 @@ function stopRecognition(){
   $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START LISTENING";
   setMood("","READY WHEN YOU ARE");
 }
-$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Listening paused";$("#voiceScreenText").textContent="Press Start Listening to turn hands-free listening back on.";$("#listenLabel").textContent="START LISTENING";return;}startRecognition(true);};
-function syncSettings(){$("#wakeToggle").checked=state.wake;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");}
-$("#wakeToggle").onchange=e=>{if(e.target.checked){startRecognition(true);}else{stopRecognition();$("#orbSubtitle").textContent="Always-on listening is paused. Press Start Listening to resume.";}};
+$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Microphone is off";$("#voiceScreenText").textContent="Press Start Listening whenever you want to speak.";}else{startRecognition(false);}};
+function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");}
+// Manual activation only; no wake-word listener is started.
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
 $("#themeToggle").onchange=e=>document.body.classList.toggle("no-glow",!e.target.checked);
 $("#assistantVolume").oninput=e=>{state.assistantVolume=Number(e.target.value);$("#assistantVolumeValue").textContent=state.assistantVolume+"%";if(state.audio)state.audio.volume=state.assistantVolume/100;localStorage.setItem("rohanVolume",state.assistantVolume);};
@@ -298,7 +298,7 @@ function renderVoices(){
     details.append(name,desc);item.append(radio,details);list.append(item);
   });
 }
-$("#refreshVoices").onclick=loadVoices;$("#previewVoice").onclick=()=>{if(!state.voiceId){$("#voiceNote").textContent="Wait for the Cartesia voice to load first.";return;}speak("Hello Rohan. This is how I sound. What would you like to do today?");};
+$("#refreshVoices").onclick=loadVoices;$("#previewVoice").onclick=()=>{if(!state.voiceId){$("#voiceNote").textContent="Wait for the Cartesia voice to load first.";return;}speak("Hello, Rohan. It is lovely to speak with you. I can help you with games, music, stories and the time. What shall we do today?");};
 const winning=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function renderBoard(){const board=$("#board");board.innerHTML="";state.board.forEach((v,i)=>{const b=document.createElement("button");b.className="cell "+(v==="O"?"o":"");b.textContent=v;b.disabled=!!v||state.gameOver;b.setAttribute("aria-label","Square "+(i+1)+(v?", "+v:""));b.onclick=()=>playMove(i);board.append(b);});$("#scoreLine").innerHTML="You "+state.scores.you+" <b>·</b> AI "+state.scores.ai+" <b>·</b> Draws "+state.scores.draw;}
 function winner(board,mark){return winning.some(line=>line.every(i=>board[i]===mark));}
@@ -376,7 +376,4 @@ $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
 setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();
-// Start hands-free wake-word listening as soon as the app is loaded. The browser will ask for microphone permission if needed.
-window.addEventListener("load",()=>{state.wake=true;syncSettings();$("#listenLabel").textContent="CONNECTING MICROPHONE…";$("#orbSubtitle").textContent="Requesting microphone access so I can listen for “Hey Rowan”.";$("#voiceScreenTitle").textContent="Starting always-on listening";$("#voiceScreenText").textContent="Allow microphone access in your browser when prompted.";startRecognition(true);});
-// If the browser suspends speech recognition while the tab is backgrounded, restart it when the user returns.
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.wake&&!state.listening){resumeWakeListening();}});
+// The microphone stays off until the user presses Start Listening. No wake word is required.
