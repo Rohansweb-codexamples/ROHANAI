@@ -104,9 +104,15 @@ const quizBank={
   {q:"Which is the largest ocean on Earth?",c:["Atlantic Ocean","Indian Ocean","Pacific Ocean"],a:"C"},
   {q:"What is the imaginary line around the middle of Earth called?",c:["Prime Meridian","Equator","Tropic of Cancer"],a:"B"},
   {q:"Which continent is the Sahara Desert in?",c:["Africa","Asia","South America"],a:"A"}
+ ],
+ baking:[
+  {q:"What ingredient makes bread dough rise?",c:["Yeast","Salt","Butter"],a:"A"},
+  {q:"Which tool is best for measuring 200 grams of flour accurately?",c:["A sieve","Kitchen scales","A rolling pin"],a:"B"},
+  {q:"What should you do before putting a cake in the oven?",c:["Preheat the oven","Freeze the cake tin","Add cold water"],a:"A"},
+  {q:"What does kneading bread dough help develop?",c:["The sugar","The gluten","The colour"],a:"B"}
  ]
 };
-const quizTopics=["science","space","animals","nature","computing","maths","history","geography"];
+const quizTopics=["science","space","animals","nature","computing","maths","history","geography","baking"];
 function cleanQuizAnswer(v){return v.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
 function renderQuizChoices(){
  const wrap=$("#quizChoices");if(!wrap)return;wrap.innerHTML="";
@@ -128,8 +134,8 @@ function startAudioQuiz(){
 function selectQuizTopic(topic){
  if(!state.quiz.active||!quizBank[topic])return;
  state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
- $("#quizHint").textContent="Topic selected: "+topic+". Tap A, B or C for each answer.";
- askQuizQuestion();
+ $("#quizHint").textContent="Topic selected: "+topic+". I will read each question aloud.";
+ speak("Great choice. Let's do the "+topic+" quiz. I'll read the questions aloud. Tap A, B or C, or answer by voice.").then(()=>askQuizQuestion());
 }
 async function quizSelectAnswer(letter){
  if(!state.quiz.active||state.quiz.phase!=="answer")return;
@@ -141,8 +147,9 @@ async function quizSelectAnswer(letter){
  if(state.quiz.index>=state.quiz.questions.length){await finishAudioQuiz();}
  else askQuizQuestion();
 }
-function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";renderQuizChoices();}
+function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";$("#quizVoiceAnswer").hidden=true;renderQuizChoices();}
 $("#startAudioQuiz").addEventListener("click",startAudioQuiz);
+$("#quizVoiceAnswer").addEventListener("click",async()=>{if(!state.quiz.active||state.quiz.phase!=="answer")return;$("#quizHint").textContent="Listening now — say A, B or C.";await quizListenAgain();});
 $("#stopAudioQuiz").addEventListener("click",stopAudioQuiz);
 async function quizListenAgain(){
  if(!state.quiz.active)return;
@@ -177,8 +184,9 @@ async function askQuizQuestion(){
  $("#quizPrompt").textContent=q.q+"\n\n"+options.join("\n");
  $("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;
  $("#quizScore").textContent="Score: "+state.quiz.score;
- $("#quizHint").textContent="Tap A, B or C to answer. You do not need the microphone.";
- renderQuizChoices();
+ $("#quizHint").textContent="Tap A, B or C, or press Answer by voice and say A, B or C.";
+ $("#quizVoiceAnswer").hidden=false;renderQuizChoices();
+ await speak("Question "+(state.quiz.index+1)+". "+q.q+". Option A: "+q.c[0]+". Option B: "+q.c[1]+". Option C: "+q.c[2]+". You can tap an answer or press Answer by voice.");
 }
 async function handleQuizUtterance(heard){
  if(!state.quiz.active)return;
@@ -213,7 +221,7 @@ async function finishAudioQuiz(){
  $("#quizProgress").textContent="Finished";
  $("#quizScore").textContent="Score: "+score+" / "+total;
  $("#quizHint").textContent="Choose Start audio quiz to play again.";
- $("#startAudioQuiz").textContent="Play again";
+ $("#quizVoiceAnswer").hidden=true;$("#startAudioQuiz").textContent="Play again";
  await speak("Quiz complete! You scored "+score+" out of "+total+". Well done!");
 }
 function handleCommand(raw){
@@ -249,6 +257,8 @@ function handleCommand(raw){
     if(state.audio){state.audio.play().then(()=>{state.speaking=true;setMood("speaking","ROHAN IS SPEAKING");}).catch(()=>{});return;}
     startMusic();return;
   }
+  const quizRequest=t.match(/^(?:prism[, ]+)?(?:please )?(?:start|begin|play|open)? ?(nature|science|space|animals|computing|maths|math|history|geography|baking) quiz$/);
+  if(quizRequest){const topic=quizRequest[1]==="math"?"maths":quizRequest[1];go("quiz");startAudioQuiz();selectQuizTopic(topic);reply("Starting your "+topic+" quiz. I'll read the questions aloud.");return;}
   if(/(tell me|tell a|read me|make up|start|want) (a )?(short )?(bedtime |children's |kids' |young )?(story|tale)|\bstory time\b|\bfairy tale\b|\btell (me )?(a )?(kids|children's|young) story\b/.test(t)||t==="story"){
     tellStory();return;
   }
