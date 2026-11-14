@@ -160,7 +160,7 @@ async function handleQuizUtterance(heard){
   quizListenAgain();return;
  }
  if(state.quiz.phase==="topic"){
-  const topic=quizTopics.find(t=>new RegExp("\\\\b"+t+"\\\\b").test(answer)||(t==="maths"&&/\\bmath\\b/.test(answer))||(t==="animals"&&/\\b(animal|wildlife)\\b/.test(answer))||(t==="computing"&&/\\b(computer|technology|coding)\\b/.test(answer)));
+  const topic=quizTopics.find(t=>new RegExp("\\b"+t+"\\b").test(answer)||(t==="maths"&&/\\bmath\\b/.test(answer))||(t==="animals"&&/\\b(animal|wildlife)\\b/.test(answer))||(t==="computing"&&/\\b(computer|technology|coding)\\b/.test(answer)));
   if(!topic){await speak("I didn't catch a topic. Say options to hear the list, or say Science, Space, Animals, Nature, Computing, Maths, History, or Geography.");quizListenAgain();return;}
   state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
   $("#quizHint").textContent="Topic selected: "+topic+". Get ready!";
