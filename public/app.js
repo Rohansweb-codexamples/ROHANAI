@@ -258,7 +258,7 @@ function handleCommand(raw){
     startMusic();return;
   }
   const quizRequest=t.match(/^(?:prism[, ]+)?(?:please )?(?:start|begin|play|open)? ?(nature|science|space|animals|computing|maths|math|history|geography|baking) quiz$/);
-  if(quizRequest){const topic=quizRequest[1]==="math"?"maths":quizRequest[1];go("quiz");startAudioQuiz();selectQuizTopic(topic);reply("Starting your "+topic+" quiz. I'll read the questions aloud.");return;}
+  if(quizRequest){const topic=quizRequest[1]==="math"?"maths":quizRequest[1];go("quiz");startAudioQuiz();selectQuizTopic(topic);addMessage("Starting your "+topic+" quiz. I will read the questions aloud.");return;}
   if(/(tell me|tell a|read me|make up|start|want) (a )?(short )?(bedtime |children's |kids' |young )?(story|tale)|\bstory time\b|\bfairy tale\b|\btell (me )?(a )?(kids|children's|young) story\b/.test(t)||t==="story"){
     tellStory();return;
   }
