@@ -19,7 +19,15 @@ app.use("/api", rateLimit({ windowMs: 60_000, limit: 35, standardHeaders: "draft
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/status", (_req, res) => {
-  res.json({ ok: true, speechConfigured: Boolean(CARTESIA_API_KEY), provider: "Cartesia", model: "sonic-3.6" });
+  const configured = Boolean(CARTESIA_API_KEY);
+  const looksLikeCurrentKey = configured && CARTESIA_API_KEY.startsWith("sk_car_");
+  res.json({
+    ok: true,
+    speechConfigured: configured,
+    keyFormatValid: looksLikeCurrentKey,
+    provider: "Cartesia",
+    model: "sonic-3.6"
+  });
 });
 
 app.get("/api/voices", async (_req, res) => {
@@ -28,8 +36,17 @@ app.get("/api/voices", async (_req, res) => {
     const upstream = await fetch("https://api.cartesia.ai/voices", {
       headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION }
     });
-    const data = await upstream.json();
-    if (!upstream.ok) return res.status(upstream.status).json({ error: data.message || data.error || "Cartesia could not load your voice." });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      console.error("Cartesia voices error:", upstream.status, JSON.stringify(data).slice(0, 500));
+      if (upstream.status === 401) {
+        return res.status(401).json({
+          error: "Cartesia rejected the API key (401). In Render, replace CARTESIA_API_KEY with a current Cartesia API key beginning sk_car_, then redeploy."
+        });
+      }
+      const detail = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
+      return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
+    }
     const source = Array.isArray(data) ? data : (data.data || data.voices || data.items || []);
     const first = source.find(v => v && v.id);
     if (!first) return res.status(502).json({ error: "Cartesia returned no available voices for this API key." });
@@ -68,7 +85,10 @@ app.post("/api/tts", async (req, res) => {
     if (!upstream.ok) {
       const message = await upstream.text();
       console.error("Cartesia TTS error:", upstream.status, message.slice(0, 500));
-      return res.status(upstream.status).json({ error: "Cartesia could not generate speech. Check your API key and voice selection." });
+      if (upstream.status === 401) {
+        return res.status(401).json({ error: "Cartesia rejected the API key (401). Replace CARTESIA_API_KEY in Render with a current key beginning sk_car_, then redeploy." });
+      }
+      return res.status(upstream.status).json({ error: `Cartesia speech request failed (HTTP ${upstream.status}). Check the Render logs for details.` });
     }
     res.setHeader("Content-Type", "audio/wav");
     res.setHeader("Cache-Control", "no-store");
