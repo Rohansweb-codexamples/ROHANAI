@@ -60,15 +60,15 @@
       </section>
 
       <section class="page" id="page-quiz">
-        <div class="section-intro"><span class="card-kicker">LISTEN • THINK • ANSWER</span><h2>Audio quiz.</h2><p>Say “options” to hear the topics, then say the topic you want to play.</p></div>
+        <div class="section-intro"><span class="card-kicker">LISTEN • THINK • ANSWER</span><h2>Audio quiz.</h2><p>Choose a topic and tap A, B or C to answer. Microphone is optional.</p></div>
         <div class="audio-quiz-card">
           <div class="quiz-orb"><span class="material-symbols-rounded">graphic_eq</span></div>
-          <div class="quiz-copy"><span class="card-kicker">VOICE-POWERED CHALLENGE</span><h3 id="quizHeading">Ready for a quiz?</h3><p id="quizPrompt">Press Start audio quiz. Rohan AI will listen for “options”, read the topics, and wait for you to choose one.</p></div>
-          <div class="quiz-topic-list" id="quizTopicList"><span>Science</span><span>Space</span><span>Animals</span><span>Nature</span><span>Computing</span><span>Maths</span><span>History</span><span>Geography</span></div>
+          <div class="quiz-copy"><span class="card-kicker">VOICE-POWERED CHALLENGE</span><h3 id="quizHeading">Ready for a quiz?</h3><p id="quizPrompt">Press Start audio quiz, then tap one of the topics. No microphone is needed.</p></div>
+          <div class="quiz-topic-list" id="quizTopicList"><span>Choose a topic below</span></div><div class="quiz-choices" id="quizChoices" hidden></div>
           <div class="quiz-progress"><span id="quizProgress">No quiz started</span><strong id="quizScore">Score: 0</strong></div>
           <button class="primary-button quiz-start" id="startAudioQuiz"><span class="material-symbols-rounded">mic</span> Start audio quiz</button>
           <button class="soft-button quiz-stop" id="stopAudioQuiz">End quiz</button>
-          <p class="quiz-hint" id="quizHint">Use headphones or keep your device volume up. Microphone permission is needed.</p>
+          <p class="quiz-hint" id="quizHint">Tap the on-screen choices. You can play without microphone permission.</p>
         </div>
       </section>
 
@@ -132,6 +132,6 @@
     </div>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=25" defer></script>
+  <script src="/app.js?v=26" defer></script>
 </body>
 </html>
