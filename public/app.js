@@ -324,10 +324,12 @@ async function loadVoices(){
  const list=$("#voiceList");list.innerHTML='<div class="loading-line">Connecting to Cartesia…</div>';
  try{
   const r=await fetch("/api/voices",{cache:"no-store"}),d=await r.json();if(!r.ok)throw new Error(d.error||"Cartesia voice service is unavailable");
-  const voices=Array.isArray(d.voices)&&d.voices.length?d.voices:(d.voice?[d.voice]:[]);
-  if(!voices.length)throw new Error("Cartesia did not return any voices.");
+  let voices=Array.isArray(d.voices)?d.voices:(d.voice?[d.voice]:[]);
+  if(!voices.length&&d.voice&&typeof d.voice==="object")voices=[d.voice];
+  voices=voices.filter(v=>v&&typeof v.id==="string"&&v.id.trim());
+  if(!voices.length)throw new Error(d.error||"Cartesia did not return any usable voices.");
   state.voices=voices;const saved=localStorage.getItem("rohanVoiceId");
-  state.voiceId=voices.some(v=>v.id===saved)?saved:voices[0].id;localStorage.setItem("rohanVoiceId",state.voiceId);
+  state.voiceId=voices.find(v=>v.id===saved)?.id||voices[0].id;localStorage.setItem("rohanVoiceId",state.voiceId);
   renderVoices();renderSetupVoiceOptions();$("#voiceNote").textContent=voices.length+" Cartesia voice"+(voices.length===1?" is":"s are")+" available.";
  }catch(e){
   state.voices=[];list.innerHTML="";const p=document.createElement("div");p.className="loading-line";p.textContent="Could not load the Cartesia voices: "+e.message;list.append(p);
