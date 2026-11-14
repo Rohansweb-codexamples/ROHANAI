@@ -57,46 +57,120 @@ function tellStory(){
 }
 
 const quizBank={
- science:[{q:"What force pulls objects towards the Earth?",a:["gravity"]},{q:"What gas do humans need to breathe to stay alive?",a:["oxygen"]},{q:"What is the process called when liquid water turns into a gas?",a:["evaporation"]},{q:"Which part of a plant takes in water from the soil?",a:["roots","the roots"]}],
- space:[{q:"Which star is at the centre of our solar system?",a:["the sun","sun"]},{q:"Which planet is known as the Red Planet?",a:["mars"]},{q:"What do we call a rock from space that lands on Earth?",a:["meteorite","a meteorite"]},{q:"What force keeps planets in orbit around the Sun?",a:["gravity"]}],
- animals:[{q:"What is the largest animal on Earth?",a:["blue whale","the blue whale"]},{q:"What do caterpillars turn into?",a:["butterflies","a butterfly","moths"]},{q:"What is a baby frog called?",a:["tadpole","a tadpole"]},{q:"Which mammal can fly?",a:["bat","a bat"]}],
- nature:[{q:"What do bees collect from flowers to make honey?",a:["nectar"]},{q:"What is the name for a baby tree growing from a seed?",a:["seedling","a seedling"]},{q:"Which part of a tree carries water from its roots to its leaves?",a:["trunk","the trunk","xylem"]},{q:"What do we call animals that are active at night?",a:["nocturnal","nocturnal animals"]}],
- computing:[{q:"What does CPU stand for?",a:["central processing unit"]},{q:"What is the name for the physical parts of a computer?",a:["hardware"]},{q:"What do we call instructions written for a computer to follow?",a:["code","a program","program"]},{q:"Which two digits are used in binary?",a:["zero and one","0 and 1","ones and zeros"]}],
- maths:[{q:"What is seven times eight?",a:["fifty six","56"]},{q:"How many sides does a hexagon have?",a:["six","6"]},{q:"What is one quarter of one hundred?",a:["twenty five","25"]},{q:"What is the name of a triangle with three equal sides?",a:["equilateral"]}],
- history:[{q:"Which ancient civilisation built the pyramids at Giza?",a:["ancient egyptians","egyptians","the ancient egyptians"]},{q:"What was the name of the ship that carried the Pilgrims to America in 1620?",a:["mayflower","the mayflower"]},{q:"Which wall came down in 1989, symbolising the end of the Cold War?",a:["berlin wall","the berlin wall"]},{q:"Who was the first person to walk on the Moon?",a:["neil armstrong"]}],
- geography:[{q:"What is the capital city of France?",a:["paris"]},{q:"Which is the largest ocean on Earth?",a:["pacific","pacific ocean","the pacific ocean"]},{q:"What is the imaginary line around the middle of Earth called?",a:["equator","the equator"]},{q:"Which continent is the Sahara Desert in?",a:["africa"]}]
+ science:[
+  {q:"What force pulls objects towards the Earth?",c:["Magnetism","Gravity","Friction"],a:"B"},
+  {q:"What gas do humans need to breathe to stay alive?",c:["Oxygen","Carbon dioxide","Hydrogen"],a:"A"},
+  {q:"What is the process called when liquid water turns into a gas?",c:["Condensation","Freezing","Evaporation"],a:"C"},
+  {q:"Which part of a plant takes in water from the soil?",c:["Flowers","Roots","Leaves"],a:"B"}
+ ],
+ space:[
+  {q:"Which star is at the centre of our solar system?",c:["The Sun","Sirius","The North Star"],a:"A"},
+  {q:"Which planet is known as the Red Planet?",c:["Venus","Jupiter","Mars"],a:"C"},
+  {q:"What do we call a rock from space that lands on Earth?",c:["A comet","A meteorite","An asteroid"],a:"B"},
+  {q:"What force keeps planets in orbit around the Sun?",c:["Gravity","Friction","Magnetism"],a:"A"}
+ ],
+ animals:[
+  {q:"What is the largest animal on Earth?",c:["African elephant","Giraffe","Blue whale"],a:"C"},
+  {q:"What do caterpillars turn into?",c:["Butterflies or moths","Spiders","Beetles"],a:"A"},
+  {q:"What is a baby frog called?",c:["A cub","A tadpole","A chick"],a:"B"},
+  {q:"Which mammal can fly?",c:["Bat","Dolphin","Squirrel"],a:"A"}
+ ],
+ nature:[
+  {q:"What do bees collect from flowers to make honey?",c:["Pollen only","Leaves","Nectar"],a:"C"},
+  {q:"What is the name for a baby tree growing from a seed?",c:["Seedling","Sapling's leaf","Rootlet"],a:"A"},
+  {q:"Which part of a tree carries water from its roots to its leaves?",c:["Bark","Xylem","Fruit"],a:"B"},
+  {q:"What do we call animals that are active at night?",c:["Diurnal","Aquatic","Nocturnal"],a:"C"}
+ ],
+ computing:[
+  {q:"What does CPU stand for?",c:["Computer Power Utility","Central Processing Unit","Central Program Upload"],a:"B"},
+  {q:"What is the name for the physical parts of a computer?",c:["Hardware","Software","Data"],a:"A"},
+  {q:"What do we call instructions written for a computer to follow?",c:["A monitor","A browser","Code"],a:"C"},
+  {q:"Which two digits are used in binary?",c:["One and two","Zero and one","Two and three"],a:"B"}
+ ],
+ maths:[
+  {q:"What is seven times eight?",c:["Fifty-four","Sixty-four","Fifty-six"],a:"C"},
+  {q:"How many sides does a hexagon have?",c:["Six","Eight","Five"],a:"A"},
+  {q:"What is one quarter of one hundred?",c:["Twenty","Twenty-five","Fifty"],a:"B"},
+  {q:"What is the name of a triangle with three equal sides?",c:["Isosceles","Scalene","Equilateral"],a:"C"}
+ ],
+ history:[
+  {q:"Which ancient civilisation built the pyramids at Giza?",c:["Ancient Romans","Ancient Egyptians","Ancient Greeks"],a:"B"},
+  {q:"What was the name of the ship that carried the Pilgrims to America in 1620?",c:["Mayflower","Titanic","Endeavour"],a:"A"},
+  {q:"Which wall came down in 1989, symbolising the end of the Cold War?",c:["The Great Wall","Hadrian's Wall","The Berlin Wall"],a:"C"},
+  {q:"Who was the first person to walk on the Moon?",c:["Buzz Aldrin","Neil Armstrong","Yuri Gagarin"],a:"B"}
+ ],
+ geography:[
+  {q:"What is the capital city of France?",c:["Paris","Rome","Madrid"],a:"A"},
+  {q:"Which is the largest ocean on Earth?",c:["Atlantic Ocean","Indian Ocean","Pacific Ocean"],a:"C"},
+  {q:"What is the imaginary line around the middle of Earth called?",c:["Prime Meridian","Equator","Tropic of Cancer"],a:"B"},
+  {q:"Which continent is the Sahara Desert in?",c:["Africa","Asia","South America"],a:"A"}
+ ]
 };
 const quizTopics=["science","space","animals","nature","computing","maths","history","geography"];
 function cleanQuizAnswer(v){return v.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
 function startAudioQuiz(){state.quiz={active:true,phase:"topic",topic:"",index:0,score:0,questions:[]};$("#quizHeading").textContent="I'm listening for a topic";$("#quizPrompt").textContent="Say “options” to hear the topics, or say a topic name now.";$("#quizProgress").textContent="Waiting for your topic";$("#quizScore").textContent="Score: 0";$("#quizHint").textContent="Listening starts now. Say “options” or a topic such as Space or Science.";$("#startAudioQuiz").textContent="Listening for topic…";startRecognition(false);}
 async function quizListenAgain(){if(!state.quiz.active)return;$("#startAudioQuiz").textContent="Listening…";startRecognition(false);}
-async function askQuizQuestion(){const q=state.quiz.questions[state.quiz.index];if(!q){await finishAudioQuiz();return;}state.quiz.phase="answer";$("#quizHeading").textContent=state.quiz.topic[0].toUpperCase()+state.quiz.topic.slice(1)+" quiz";$("#quizPrompt").textContent=q.q;$("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;$("#quizScore").textContent="Score: "+state.quiz.score;$("#quizHint").textContent="Listen to the question, then say your answer.";await speak("Question "+(state.quiz.index+1)+". "+q.q);quizListenAgain();}
+async function askQuizQuestion(){
+ const q=state.quiz.questions[state.quiz.index];
+ if(!q){await finishAudioQuiz();return;}
+ state.quiz.phase="answer";
+ const options=q.c.map((choice,i)=>String.fromCharCode(65+i)+". "+choice);
+ $("#quizHeading").textContent=state.quiz.topic[0].toUpperCase()+state.quiz.topic.slice(1)+" quiz";
+ $("#quizPrompt").textContent=q.q+"\\n\\n"+options.join("\\n");
+ $("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;
+ $("#quizScore").textContent="Score: "+state.quiz.score;
+ $("#quizHint").textContent="Say A, B or C to answer.";
+ await speak("Question "+(state.quiz.index+1)+". "+q.q+". Option A: "+q.c[0]+". Option B: "+q.c[1]+". Option C: "+q.c[2]+". Say A, B or C.");
+ quizListenAgain();
+}
 async function handleQuizUtterance(heard){
- if(!state.quiz.active)return;const answer=cleanQuizAnswer(heard);
- if(state.quiz.phase==="topic"&&/\b(options|option|topics|choices)\b/.test(answer)){
-  $("#quizHeading").textContent="Choose your topic";$("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History or Geography.";$ ("#quizHint");
+ if(!state.quiz.active)return;
+ const answer=cleanQuizAnswer(heard);
+ if(state.quiz.phase==="topic"&&/\\b(options|option|topics|choices)\\b/.test(answer)){
+  $("#quizHeading").textContent="Choose your topic";
+  $("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History or Geography.";
   $("#quizHint").textContent="I'm listening for the topic name.";
-  await speak("Here are your options. Science, Space, Animals, Nature, Computing, Maths, History, or Geography. Say the topic you want.");quizListenAgain();return;
+  await speak("Here are your options. Science, Space, Animals, Nature, Computing, Maths, History, or Geography. Say the topic you want.");
+  quizListenAgain();return;
  }
  if(state.quiz.phase==="topic"){
   const topic=quizTopics.find(t=>answer===t||answer.includes(t)||(t==="maths"&&answer.includes("math")));
   if(!topic){await speak("I didn't catch a topic. Say options to hear the list, or say Science, Space, Animals, Nature, Computing, Maths, History, or Geography.");quizListenAgain();return;}
   state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
   $("#quizHint").textContent="Topic selected: "+topic+". Get ready!";
-  await speak("Great choice. Let's do the "+topic+" quiz. There are four questions. Say your answer after each question.");await askQuizQuestion();return;
+  await speak("Great choice. Let's do the "+topic+" quiz. There are four multiple-choice questions. Answer each one by saying A, B or C.");
+  await askQuizQuestion();return;
  }
  if(state.quiz.phase==="answer"){
-  const q=state.quiz.questions[state.quiz.index],correct=q.a.some(x=>answer===cleanQuizAnswer(x)||answer.includes(cleanQuizAnswer(x)));
-  if(correct)state.quiz.score++;$("#quizScore").textContent="Score: "+state.quiz.score;state.quiz.index++;
-  const feedback=correct?"That's correct!":"Not quite. The answer was "+q.a[0]+".";
+  const letterMatch=answer.match(/(?:^|\\s)([abc])(?:$|\\s)/);
+  const wordMatch=answer.match(/\\b(ay|a|bee|be|b|see|sea|c)\\b/);
+  const spoken=letterMatch?letterMatch[1]:(wordMatch?({ay:"a",bee:"b",be:"b",see:"c",sea:"c"}[wordMatch[1]]||wordMatch[1]):"");
+  if(!["a","b","c"].includes(spoken)){
+   $("#quizHint").textContent="I didn't catch that. Please say A, B or C.";
+   await speak("Please answer by saying A, B or C.");
+   quizListenAgain();return;
+  }
+  const q=state.quiz.questions[state.quiz.index],selected=spoken.toUpperCase(),correct=selected===q.a;
+  if(correct)state.quiz.score++;
+  $("#quizHint").textContent=correct?"Correct!":"The correct answer was "+q.a+". "+q.c[q.a.charCodeAt(0)-65]+".";
+  $("#quizScore").textContent="Score: "+state.quiz.score;
+  state.quiz.index++;
+  const feedback=correct?"That's correct!": "Not quite. The correct answer was "+q.a+". "+q.c[q.a.charCodeAt(0)-65]+".";
   if(state.quiz.index>=state.quiz.questions.length){await speak(feedback);await finishAudioQuiz();}
   else{await speak(feedback);await askQuizQuestion();}
  }
 }
-async function finishAudioQuiz(){const score=state.quiz.score,total=state.quiz.questions.length,topic=state.quiz.topic;state.quiz.active=false;state.quiz.phase="";$("#quizHeading").textContent="Quiz complete!";$("#quizPrompt").textContent="You scored "+score+" out of "+total+" in "+topic+"." ;$("#quizProgress").textContent="Finished";$("#quizScore").textContent="Score: "+score+" / "+total;$("#quizHint").textContent="Choose Start audio quiz to play again.";$("#startAudioQuiz").textContent="Play again";await speak("Quiz complete! You scored "+score+" out of "+total+". Well done!");}
-$("#startAudioQuiz").onclick=startAudioQuiz;
-$("#stopAudioQuiz").onclick=()=>{state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Press Start audio quiz whenever you are ready.";$("#quizProgress").textContent="No quiz started";$("#startAudioQuiz").textContent="Start audio quiz";};
-
+async function finishAudioQuiz(){
+ const score=state.quiz.score,total=state.quiz.questions.length,topic=state.quiz.topic;
+ state.quiz.active=false;state.quiz.phase="";
+ $("#quizHeading").textContent="Quiz complete!";
+ $("#quizPrompt").textContent="You scored "+score+" out of "+total+" in "+topic+".";
+ $("#quizProgress").textContent="Finished";
+ $("#quizScore").textContent="Score: "+score+" / "+total;
+ $("#quizHint").textContent="Choose Start audio quiz to play again.";
+ $("#startAudioQuiz").textContent="Play again";
+ await speak("Quiz complete! You scored "+score+" out of "+total+". Well done!");
+}
 function handleCommand(raw){
   const text=raw.trim();if(!text)return;
   const t=text.toLowerCase().replace(/[.!?]/g,"").trim();
