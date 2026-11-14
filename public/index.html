@@ -42,7 +42,8 @@
             <h2 id="orbHeading">Hello, Rohan.</h2><p class="orb-subtitle" id="orbSubtitle">Press Activate Spark once, then say Spark followed by your request.</p>
             <button class="listen-button" id="listenButton" aria-label="Activate or stop Spark voice listening"><span class="mic-symbol"><span class="material-symbols-rounded">mic</span></span><span id="listenLabel">ACTIVATE SPARK</span><span class="listen-wave"><i></i><i></i><i></i><i></i></span></button>
             <div class="voice-screen" id="voiceScreen" aria-live="polite"><span class="voice-screen-dot"></span><div><strong id="voiceScreenTitle">Ready when you are</strong><p id="voiceScreenText">Press Activate Spark once, then say Spark followed by your request.</p></div></div>
-            <div class="wake-hint">Spark hands-free mode: activate once, then say Spark and your request.</div>
+            <div class="wake-hint">Spark is hands-free after setup. Say “Spark, set a timer for 5 minutes”.</div>
+            <div class="spark-timer-card" aria-live="polite"><div><span class="card-kicker">VOICE TIMER</span><strong id="timerDisplay">00:00</strong><small id="timerStatus">READY FOR A TIMER</small></div><span class="material-symbols-rounded">timer</span></div>
             
             <div class="conversation" id="conversation" aria-live="polite"><div class="message assistant-message"><span class="message-avatar">R</span><p>Hi! I can play music, start a game, tell you the time and help with your settings.</p></div></div>
           </div>
@@ -60,7 +61,7 @@
       </section>
 
       <section class="page" id="page-quiz">
-        <div class="section-intro"><span class="card-kicker">LISTEN • THINK • ANSWER</span><h2>Audio quiz.</h2><p>Choose a topic and tap A, B or C to answer. Microphone is optional.</p></div>
+        <div class="section-intro"><span class="card-kicker">LISTEN • THINK • ANSWER</span><h2>Audio quiz.</h2><p>Choose a topic during setup, then use Spark to answer by voice.</p></div>
         <div class="audio-quiz-card">
           <div class="quiz-orb"><span class="material-symbols-rounded">graphic_eq</span></div>
           <div class="quiz-copy"><span class="card-kicker">VOICE-POWERED CHALLENGE</span><h3 id="quizHeading">Ready for a quiz?</h3><p id="quizPrompt">Press Start audio quiz, then tap one of the topics. No microphone is needed.</p></div>
@@ -133,6 +134,6 @@
     </div>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=31" defer></script>
+  <script src="/app.js?v=32" defer></script>
 </body>
 </html>
