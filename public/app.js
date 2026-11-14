@@ -249,7 +249,8 @@ function stopRecognition(){
   $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START LISTENING";
   setMood("","READY WHEN YOU ARE");
 }
-$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Microphone is off";$("#voiceScreenText").textContent="Press Start Listening whenever you want to speak.";}else{startRecognition(false);}};
+function primeMusicPlayback(){try{musicElement.muted=true;const attempt=musicElement.play();if(attempt&&typeof attempt.then==="function"){attempt.then(()=>{musicElement.pause();musicElement.currentTime=0;musicElement.muted=false;}).catch(()=>{musicElement.muted=false;});}else{musicElement.muted=false;}}catch{musicElement.muted=false;}}
+$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Microphone is off";$("#voiceScreenText").textContent="Press Start Listening whenever you want to speak.";}else{primeMusicPlayback();startRecognition(false);}};
 function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");$("#settingsSpeechSpeed").value=state.speed;$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";}
 // Manual activation only; no wake-word listener is started.
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
@@ -344,6 +345,7 @@ musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").i
 function startMusic(){
  if(!musicElement.src)selectTrack(state.track||"library",false);
  musicElement.loop=true;
+ musicElement.muted=false;
  musicElement.volume=Number($("#musicVolume").value)/100;
  $("#musicStatus").textContent="Loading track…";
  musicElement.play().then(()=>{
