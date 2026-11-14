@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#ff7a18">
+  <meta name="theme-color" content="#080b18">
   <meta name="description" content="Rohan AI — your voice-controlled assistant, games and music space.">
   <title>Rohan AI — Your assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=2">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -40,7 +40,7 @@
             <div class="orb-wrap" id="orbWrap"><div class="orb-halo"></div><div class="orb"><div class="orb-core"></div><div class="orb-shine"></div></div><div class="orb-ring ring-a"></div><div class="orb-ring ring-b"></div></div>
             <h2 id="orbHeading">Hello, Rohan.</h2><p class="orb-subtitle" id="orbSubtitle">I'm here. What shall we do?</p>
             <button class="listen-button" id="listenButton"><span class="mic-symbol">🎙</span><span id="listenLabel">Tap to talk</span><span class="listen-wave"><i></i><i></i><i></i><i></i></span></button>
-            <div class="wake-hint">Try saying <strong>“Hey Rohan”</strong> when wake word mode is enabled</div>
+            <div class="wake-hint">Enable wake word mode, then say <strong>“Hey Rohan”</strong>. Keep this tab open.</div>
             <div class="text-command"><input id="commandInput" type="text" maxlength="240" placeholder="Or type a message…" autocomplete="off"><button id="sendCommand" aria-label="Send message">➜</button></div>
             <div class="conversation" id="conversation" aria-live="polite"><div class="message assistant-message"><span class="message-avatar">R</span><p>Hi! I can play music, start a game, tell you the time and help with your settings.</p></div></div>
           </div>
@@ -76,8 +76,8 @@
       <section class="page" id="page-settings">
         <div class="section-intro"><span class="card-kicker">MAKE IT YOURS</span><h2>Settings & preferences.</h2><p>Fine-tune how Rohan AI listens and responds.</p></div>
         <div class="settings-grid">
-          <div class="settings-card"><div class="settings-heading"><div><h3>Voice activation</h3><p>Hands-free listening in this browser</p></div><span class="settings-icon">◉</span></div><div class="setting-row"><div><strong>Wake word mode</strong><small>Listen for “Hey Rohan” while this tab is open</small></div><label class="switch"><input type="checkbox" id="wakeToggle"><span></span></label></div><div class="setting-row"><div><strong>Speak responses</strong><small>Read assistant replies aloud</small></div><label class="switch"><input type="checkbox" id="speakToggle" checked><span></span></label></div><div class="setting-row"><div><strong>Microphone permission</strong><small id="micSupport">Browser permission is requested when you start listening</small></div><button class="soft-button" id="testMic">Test mic</button></div></div>
-          <div class="settings-card"><div class="settings-heading"><div><h3>Appearance</h3><p>Your assistant's look and feel</p></div><span class="settings-icon">✧</span></div><div class="setting-row"><div><strong>Orange glow</strong><small>Use the signature orange theme</small></div><label class="switch"><input type="checkbox" id="themeToggle" checked><span></span></label></div><div class="setting-row"><div><strong>Assistant volume</strong><small>Volume of spoken replies</small></div><strong id="assistantVolumeValue">85%</strong></div><input class="range-control" id="assistantVolume" type="range" min="0" max="100" value="85"></div>
+          <div class="settings-card"><div class="settings-heading"><div><h3>Voice activation</h3><p>Hands-free listening in this browser</p></div><span class="settings-icon">◉</span></div><div class="setting-row"><div><strong>Wake word mode</strong><small>Keep listening for “Hey Rohan” while this tab stays open</small></div><label class="switch"><input type="checkbox" id="wakeToggle"><span></span></label></div><div class="setting-row"><div><strong>Speak responses</strong><small>Read assistant replies aloud</small></div><label class="switch"><input type="checkbox" id="speakToggle" checked><span></span></label></div><div class="setting-row"><div><strong>Microphone permission</strong><small id="micSupport">Browser permission is requested when you start listening</small></div><button class="soft-button" id="testMic">Test mic</button></div></div>
+          <div class="settings-card"><div class="settings-heading"><div><h3>Appearance</h3><p>Your assistant's look and feel</p></div><span class="settings-icon">✧</span></div><div class="setting-row"><div><strong>Blue and purple glow</strong><small>Use the black, light-blue and purple theme</small></div><label class="switch"><input type="checkbox" id="themeToggle" checked><span></span></label></div><div class="setting-row"><div><strong>Assistant volume</strong><small>Volume of spoken replies</small></div><strong id="assistantVolumeValue">85%</strong></div><input class="range-control" id="assistantVolume" type="range" min="0" max="100" value="85"></div>
           <div class="settings-card full-card"><div class="settings-heading"><div><h3>Assistant information</h3><p>Connection and service details</p></div><span class="settings-icon">ⓘ</span></div><div class="info-row"><span>Speech provider</span><strong>Cartesia Sonic 3.6</strong></div><div class="info-row"><span>API key</span><strong id="keyStatus">Checking server…</strong></div><div class="info-row"><span>Voice recognition</span><strong>Browser speech recognition</strong></div><div class="security-note">Your Cartesia API key stays on the server. Never paste it into this page or commit it to GitHub.</div></div>
         </div>
       </section>
@@ -85,6 +85,6 @@
     </main>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js" defer></script>
+  <script src="/app.js?v=2" defer></script>
 </body>
 </html>
