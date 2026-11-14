@@ -119,7 +119,7 @@
       <p>Choose the voice and colour you want. You can change them later in settings.</p>
       <label class="setup-field-label" for="welcomeVoiceSelect">Assistant voice</label>
       <select id="welcomeVoiceSelect" class="welcome-voice-select"><option value="">Loading available voices…</option></select>
-      <div class="welcome-voice-status" id="welcomeVoiceStatus">Connecting to Cartesia voices…</div><button class="soft-button welcome-preview" id="previewWelcomeVoice" type="button">Preview selected voice</button>
+      <div class="welcome-voice-status" id="welcomeVoiceStatus">Connecting to Cartesia voices…</div><div class="welcome-voice-actions"><button class="soft-button welcome-preview" id="previewWelcomeVoice" type="button">Preview selected voice</button><button class="soft-button welcome-retry" id="retryWelcomeVoice" type="button">Retry loading voice</button></div>
       <div class="setup-field-label">Choose your colour</div>
       <div class="accent-choices">
         <button class="accent-choice selected" data-accent="blue" type="button"><i class="accent-dot blue-dot"></i><span>Ocean blue</span></button>
@@ -132,6 +132,6 @@
     </div>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=18" defer></script>
+  <script src="/app.js?v=19" defer></script>
 </body>
 </html>
