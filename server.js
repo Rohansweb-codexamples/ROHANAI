@@ -51,6 +51,18 @@ function findDeviceByToken(token, role) {
   }
   return null;
 }
+app.post("/api/device/speaker-create", (_req, res) => {
+ cleanDeviceSessions(); let code;
+ do { code=String(randomInt(100000,1000000)); } while(deviceSessions.has(code));
+ const session={code,controllerToken:"",speakerToken:randomBytes(24).toString("hex"),createdAt:Date.now(),lastSeen:Date.now(),speakerConnected:true,commands:[],state:{playing:false,track:"House",currentTime:0,duration:0,volume:0.85}};
+ deviceSessions.set(code,session);saveDeviceSessions();res.json({ok:true,code,token:session.speakerToken});
+});
+app.post("/api/device/controller-join",(req,res)=>{
+ cleanDeviceSessions();const code=String(req.body?.code||"").replace(/\D/g,"").slice(0,6);const session=deviceSessions.get(code);
+ if(!session)return res.status(404).json({error:"Code not found. Check the code shown on the speaker."});
+ if(session.controllerToken)return res.status(409).json({error:"This speaker is already connected to a controller."});
+ session.controllerToken=randomBytes(24).toString("hex");saveDeviceSessions();res.json({ok:true,token:session.controllerToken,code});
+});
 app.post("/api/device/create", (_req, res) => {
   cleanDeviceSessions();
   let code;
@@ -118,7 +130,7 @@ app.post("/api/device/heartbeat", (req, res) => {
 app.post("/api/device/state", (req, res) => {
   const session = findDeviceByToken(req.body?.token, "controller");
   if (!session) return res.status(401).json({ error: "Controller session expired. Refresh this page to create a new pairing code." });
-  const connected = Boolean(session.speakerToken && session.speakerConnected && Date.now() - session.lastSeen < 15000);
+  const connected = Boolean(session.controllerToken && session.speakerToken && session.speakerConnected && Date.now() - session.lastSeen < 15000);
   res.json({ ok: true, connected, state: session.state, code: session.code, createdAt: session.createdAt });
 });
 app.post("/api/device/disconnect", (req, res) => {
