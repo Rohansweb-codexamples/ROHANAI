@@ -1,6 +1,6 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]} };
+const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]}, timer:{endAt:0,interval:null,remaining:0,active:false} };
 const tracks=[
  {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
  {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
@@ -224,6 +224,54 @@ async function finishAudioQuiz(){
  $("#quizVoiceAnswer").hidden=true;$("#startAudioQuiz").textContent="Play again";
  await speak("Quiz complete! You scored "+score+" out of "+total+". Well done!");
 }
+
+function formatTimer(ms){
+ const total=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
+ return h?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+}
+function renderTimer(){
+ const display=$("#timerDisplay"),status=$("#timerStatus");
+ if(!display||!status)return;
+ if(state.timer.active){
+  const left=Math.max(0,state.timer.endAt-Date.now());
+  display.textContent=formatTimer(left);status.textContent="COUNTING DOWN";
+  if(left<=0)finishTimer();
+ }else if(state.timer.remaining>0){
+  display.textContent=formatTimer(state.timer.remaining);status.textContent="TIMER PAUSED";
+ }else{
+  display.textContent="00:00";status.textContent="READY FOR A TIMER";
+ }
+}
+function startTimer(seconds){
+ const duration=Math.max(1,Math.min(86400,Math.round(seconds)))*1000;
+ clearInterval(state.timer.interval);
+ state.timer.remaining=duration;state.timer.endAt=Date.now()+duration;state.timer.active=true;
+ state.timer.interval=setInterval(renderTimer,250);renderTimer();
+ const mins=Math.floor(seconds/60),secs=Math.round(seconds%60);
+ const spoken=mins&&secs?mins+" minutes and "+secs+" seconds":mins?mins+" minute"+(mins===1?"":"s"):secs+" seconds";
+ reply("Your "+spoken+" timer has started.");
+}
+function finishTimer(){
+ if(!state.timer.active)return;
+ clearInterval(state.timer.interval);state.timer.active=false;state.timer.remaining=0;state.timer.endAt=0;renderTimer();
+ reply("Your timer is finished!");
+}
+function cancelTimer(){
+ clearInterval(state.timer.interval);state.timer.active=false;state.timer.remaining=0;state.timer.endAt=0;renderTimer();
+}
+function pauseTimer(){
+ if(!state.timer.active)return false;
+ state.timer.remaining=Math.max(0,state.timer.endAt-Date.now());state.timer.active=false;clearInterval(state.timer.interval);renderTimer();return true;
+}
+function resumeTimer(){
+ if(state.timer.active||state.timer.remaining<=0)return false;
+ state.timer.endAt=Date.now()+state.timer.remaining;state.timer.active=true;state.timer.interval=setInterval(renderTimer,250);renderTimer();return true;
+}
+function parseTimerDuration(text){
+ const matches=[...text.matchAll(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)/g)];
+ if(!matches.length)return 0;
+ return matches.reduce((sum,m)=>{const n=Number(m[1]),unit=m[2];return sum+n*(/^h|^hr/.test(unit)?3600:/^m/.test(unit)?60:1);},0);
+}
 function handleCommand(raw){
   const text=raw.trim();if(!text)return;
   const t=text.toLowerCase().replace(/[.!?]/g,"").trim().replace(/^spark[, ]*/,"").trim();
@@ -237,6 +285,25 @@ function handleCommand(raw){
       addMessage(t.startsWith("stop")?"Okay, I've stopped speaking.":"Okay, I've paused. Say resume when you're ready.");
       return;
     }
+    return;
+  }
+  const timerDuration=parseTimerDuration(t);
+  if(/\b(?:set|start|begin|make)\b.*\btimer\b|\btimer\s+for\b/.test(t)&&timerDuration>0){
+    startTimer(timerDuration);return;
+  }
+  if(/\b(?:cancel|clear|delete|stop)\b.*\btimer\b/.test(t)){
+    cancelTimer();reply("Your timer has been cancelled.");return;
+  }
+  if(/\bpause\b.*\btimer\b/.test(t)){
+    reply(pauseTimer()?"Your timer is paused.":"There is no running timer to pause.");return;
+  }
+  if(/\b(?:resume|continue)\b.*\btimer\b/.test(t)){
+    reply(resumeTimer()?"Your timer is running again.":"There is no paused timer to resume.");return;
+  }
+  if(/\b(?:how much time|time left|remaining time|timer status)\b/.test(t)){
+    if(state.timer.active)reply("You have "+formatTimer(state.timer.endAt-Date.now())+" left.");
+    else if(state.timer.remaining>0)reply("Your timer is paused at "+formatTimer(state.timer.remaining)+".");
+    else reply("There isn't a timer running.");
     return;
   }
   if(/^(stop|pause)( music)?$|^(stop|pause) the music$/.test(t)){
@@ -407,9 +474,10 @@ async function startRecognition(wake=false){
   state.recognition.continuous=true;
   $("#listenLabel").textContent="CONNECTING MICROPHONE…";
   $("#listenButton").classList.add("listening");
-  setMood("listening","CONNECTING MICROPHONE");
+  setMood("listening","CONNECTING SPARK");
   $("#orbSubtitle").textContent="Say Spark followed by your request. Keep this page open.";
   startRecognitionEngine();
+  if(state.wake){document.body.classList.add("spark-handsfree");localStorage.setItem("rohanHandsFreeSetup","true");}
 }
 function resumeWakeListening(){
   if(!state.wake)return;
@@ -493,8 +561,8 @@ $$(".accent-choice").forEach(b=>b.onclick=()=>setAccent(b.dataset.accent));
 $("#welcomeVoiceSelect").onchange=e=>chooseVoice(e.target.value);
 $("#previewWelcomeVoice").onclick=()=>{if(!state.voiceId){$("#welcomeVoiceStatus").textContent="No Cartesia voice is available yet.";return;}speak("Hello! This is a preview of the voice you selected for Rohan AI.");};
 $("#retryWelcomeVoice").onclick=loadVoices;
-$("#finishSetup").onclick=()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");$("#orbSubtitle").textContent="All set. Press Start Listening whenever you want to talk.";reply("You're all set! I've saved your voice and colour choices. What would you like to do?");};
-function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanSetupComplete")!=="true")$("#welcomeSetup").classList.remove("hidden");}
+$("#finishSetup").onclick=()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");$("#orbSubtitle").textContent="Activating Spark. Allow microphone access if asked.";startRecognition(true);};
+function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanHandsFreeSetup")!=="true")$("#welcomeSetup").classList.remove("hidden");else document.body.classList.add("spark-handsfree");}
 
 const winning=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function renderBoard(){const board=$("#board");board.innerHTML="";state.board.forEach((v,i)=>{const b=document.createElement("button");b.className="cell "+(v==="O"?"o":"");b.textContent=v;b.disabled=!!v||state.gameOver;b.setAttribute("aria-label","Square "+(i+1)+(v?", "+v:""));b.onclick=()=>playMove(i);board.append(b);});$("#scoreLine").innerHTML="You "+state.scores.you+" <b>·</b> AI "+state.scores.ai+" <b>·</b> Draws "+state.scores.draw;}
