@@ -69,8 +69,8 @@
       </section>
 
       <section class="page" id="page-voice">
-        <div class="section-intro"><span class="card-kicker">SOUND LIKE YOURSELF</span><h2>My voice, your choice.</h2><p>Choose a Cartesia voice and preview how I speak.</p></div>
-        <div class="voice-layout"><div class="settings-card voice-picker"><div class="settings-heading"><div><h3>Cartesia voices</h3><p>Choose from voices available to your API key.</p></div><button class="soft-button" id="refreshVoices">↻ Refresh</button></div><div id="voiceList" class="voice-list"><div class="loading-line">Checking Cartesia voices…</div></div><div class="setting-row"><div><strong>Speaking speed</strong><small>How quickly I talk</small></div><strong id="speedValue">1.0×</strong></div><input class="range-control" id="speechSpeed" type="range" min="0.6" max="1.5" step="0.1" value="1"></div><div class="settings-card preview-card"><div class="preview-orb">R</div><span class="card-kicker">VOICE PREVIEW</span><h3>That's my voice.</h3><p>Hear a sample before choosing your assistant voice.</p><button class="primary-button" id="previewVoice">▶ Preview voice</button><div class="voice-note" id="voiceNote">Your selected voice will be used for every spoken reply.</div></div></div>
+        <div class="section-intro"><span class="card-kicker">SOUND LIKE YOURSELF</span><h2>My voice, your choice.</h2><p>I use one Cartesia voice for every spoken reply.</p></div>
+        <div class="voice-layout"><div class="settings-card voice-picker"><div class="settings-heading"><div><h3>Your Cartesia voice</h3><p>Rohan AI uses one Cartesia voice for every spoken reply.</p></div><button class="soft-button" id="refreshVoices">↻ Refresh</button></div><div id="voiceList" class="voice-list"><div class="loading-line">Connecting to your Cartesia voice…</div></div><div class="setting-row"><div><strong>Speaking speed</strong><small>How quickly I talk</small></div><strong id="speedValue">1.0×</strong></div><input class="range-control" id="speechSpeed" type="range" min="0.6" max="1.5" step="0.1" value="1"></div><div class="settings-card preview-card"><div class="preview-orb">R</div><span class="card-kicker">VOICE PREVIEW</span><h3>That's my voice.</h3><p>Hear a sample before choosing your assistant voice.</p><button class="primary-button" id="previewVoice">▶ Preview voice</button><div class="voice-note" id="voiceNote">Your selected voice will be used for every spoken reply.</div></div></div>
       </section>
 
       <section class="page" id="page-settings">
@@ -85,6 +85,6 @@
     </main>
   </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=4" defer></script>
+  <script src="/app.js?v=5" defer></script>
 </body>
 </html>
