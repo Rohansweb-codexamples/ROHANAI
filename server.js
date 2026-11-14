@@ -80,7 +80,7 @@ app.post("/api/tts", async (req, res) => {
         voice: { mode: "id", id: voiceId },
         language: "en",
         output_format: { container: "wav", encoding: "pcm_s16le", sample_rate: 44100 },
-        generation_config: { speed }
+        generation_config: { speed, emotion: "content", volume: 1.08 }
       })
     });
     if (!upstream.ok) {
