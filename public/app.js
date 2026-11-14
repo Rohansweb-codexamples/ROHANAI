@@ -477,8 +477,10 @@ async function startRecognition(wake=false){
     stream.getTracks().forEach(track=>track.stop());
   }catch(error){
     state.wake=false;state.listening=false;$("#wakeToggle").checked=false;
+    localStorage.removeItem("rohanHandsFreeSetup");document.body.classList.remove("spark-handsfree");
     $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="ALLOW MICROPHONE";
-    const msg=error.name==="NotAllowedError"?"Please allow microphone access in your browser.":"The microphone could not be opened: "+error.message;
+    if(localStorage.getItem("rohanSetupComplete")==="true")$("#welcomeSetup")?.classList.remove("hidden");
+    const msg=error.name==="NotAllowedError"?"Please allow microphone access in your browser, then press Finish setup to resume Spark.":"The microphone could not be opened: "+error.message;
     $("#orbSubtitle").textContent=msg;$("#voiceScreenTitle").textContent="Microphone permission needed";$("#voiceScreenText").textContent=msg;setMood("","MICROPHONE PERMISSION NEEDED");return;
   }
   if(!state.recognition)state.recognition=speechRecognition();
