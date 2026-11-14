@@ -606,7 +606,8 @@ const musicElement=$("#musicAudio");
 musicElement.src=tracks[0].src;
 musicElement.addEventListener("loadedmetadata",()=>{$("#duration").textContent=formatMusicTime(musicElement.duration);});
 musicElement.addEventListener("canplay",()=>{if(!state.musicOn)$("#musicStatus").textContent="Ready to play";});
-musicElement.addEventListener("waiting",()=>{$("#musicStatus").textContent="Buffering audio…";});\nmusicElement.addEventListener("play",()=>{if(state.wake&&state.listening&&!state.recognitionRunning)scheduleRecognitionRestart(250);});
+musicElement.addEventListener("waiting",()=>{$("#musicStatus").textContent="Buffering audio…";});
+musicElement.addEventListener("play",()=>{if(state.wake&&state.listening&&!state.recognitionRunning)scheduleRecognitionRestart(250);});
 musicElement.addEventListener("error",()=>{
  state.musicOn=false;
  const code=musicElement.error?.code;
