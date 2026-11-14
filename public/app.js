@@ -116,7 +116,7 @@ async function askQuizQuestion(){
  state.quiz.phase="answer";
  const options=q.c.map((choice,i)=>String.fromCharCode(65+i)+". "+choice);
  $("#quizHeading").textContent=state.quiz.topic[0].toUpperCase()+state.quiz.topic.slice(1)+" quiz";
- $("#quizPrompt").textContent=q.q+"\\n\\n"+options.join("\\n");
+ $("#quizPrompt").textContent=q.q+"\n\n"+options.join("\n");
  $("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;
  $("#quizScore").textContent="Score: "+state.quiz.score;
  $("#quizHint").textContent="Say A, B or C to answer.";
@@ -126,7 +126,7 @@ async function askQuizQuestion(){
 async function handleQuizUtterance(heard){
  if(!state.quiz.active)return;
  const answer=cleanQuizAnswer(heard);
- if(state.quiz.phase==="topic"&&/\\b(options|option|topics|choices)\\b/.test(answer)){
+ if(state.quiz.phase==="topic"&&/\b(options|option|topics|choices)\b/.test(answer)){
   $("#quizHeading").textContent="Choose your topic";
   $("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History or Geography.";
   $("#quizHint").textContent="I'm listening for the topic name.";
@@ -142,8 +142,8 @@ async function handleQuizUtterance(heard){
   await askQuizQuestion();return;
  }
  if(state.quiz.phase==="answer"){
-  const letterMatch=answer.match(/(?:^|\\s)([abc])(?:$|\\s)/);
-  const wordMatch=answer.match(/\\b(ay|a|bee|be|b|see|sea|c)\\b/);
+  const letterMatch=answer.match(/(?:^|\s)([abc])(?:$|\s)/);
+  const wordMatch=answer.match(/\b(ay|a|bee|be|b|see|sea|c)\b/);
   const spoken=letterMatch?letterMatch[1]:(wordMatch?({ay:"a",bee:"b",be:"b",see:"c",sea:"c"}[wordMatch[1]]||wordMatch[1]):"");
   if(!["a","b","c"].includes(spoken)){
    $("#quizHint").textContent="I didn't catch that. Please say A, B or C.";
