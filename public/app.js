@@ -13,19 +13,20 @@ function setMood(mood,label){
   const title=$("#voiceScreenTitle"), detail=$("#voiceScreenText"), panel=$("#voiceScreen");
   if(title&&detail&&panel){
     panel.classList.toggle("is-active",mood==="listening"||mood==="speaking");
-    if(mood==="listening"){title.textContent=state.wake?"Listening for Hey Rohan":"I'm listening";detail.textContent="Speak clearly. I'm waiting for your request.";}
+    if(mood==="listening"){title.textContent=state.wake?"Listening for Hey Rowan":"I'm listening";detail.textContent="Speak clearly. I'm waiting for your request.";}
     else if(mood==="speaking"){title.textContent="Rohan AI is speaking";detail.textContent="Playing your reply with Cartesia voice.";}
     else if(label.includes("UNAVAILABLE")||label.includes("NOT READY")){title.textContent="Voice needs attention";detail.textContent=$("#voiceNote")?.textContent||"Check the Cartesia connection.";}
     else {title.textContent="Your assistant is ready";detail.textContent="Press the large button to allow microphone access and speak.";}
   }
 }
-function resumeWakeListening(){if(!state.wake||state.listening)return;state.listening=true;try{state.recognition?.start();$("#listenLabel").textContent="Listening for Hey Rohan";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROHAN");}catch{}}
+function resumeWakeListening(){if(!state.wake||state.listening)return;state.listening=true;try{state.recognition?.start();$("#listenLabel").textContent="Listening for Hey Rowan";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch{}}
 async function speak(text){
   if(!state.speak){if(state.wake)setTimeout(resumeWakeListening,500);return;}
   const finish=()=>{setMood("","READY WHEN YOU ARE");if(state.wake)setTimeout(resumeWakeListening,700);};
   if(!state.voiceId){$("#voiceNote").textContent="Cartesia voice is not connected. Replace the API key in Render, redeploy, then refresh this page.";setMood("","CARTESIA VOICE NOT READY");$("#voiceScreenTitle").textContent="Cartesia voice is not connected";$("#voiceScreenText").textContent=$("#voiceNote").textContent;finish();return;}
   try{
-    const response=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voiceId:state.voiceId,speed:state.speed})});
+    const speechText=text.replace(/\bRohan\b/gi,"Rowan");
+    const response=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:speechText,voiceId:state.voiceId,speed:state.speed})});
     if(!response.ok)throw new Error((await response.json().catch(()=>({}))).error||"Cartesia speech failed");
     const blob=await response.blob();if(!blob.size)throw new Error("Cartesia returned empty audio");
     if(state.audio){state.audio.pause();if(state.audio.src.startsWith("blob:"))URL.revokeObjectURL(state.audio.src);}
@@ -78,16 +79,16 @@ function speechRecognition(){
   rec.onerror=e=>{
     if(e.error==="not-allowed"||e.error==="service-not-allowed"){
       state.listening=false;state.wake=false;
-      $("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome, then switch on Hey Rohan again.";
+      $("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome, then switch on Hey Rowan again.";
       $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
       $("#wakeToggle").checked=false;
       setMood("","MICROPHONE PERMISSION NEEDED");
       $("#voiceScreenTitle").textContent="Microphone permission needed";
-      $("#voiceScreenText").textContent="Select the site icon beside the address bar, allow Microphone, then switch on Hey Rohan again.";
+      $("#voiceScreenText").textContent="Select the site icon beside the address bar, allow Microphone, then switch on Hey Rowan again.";
     }else if(e.error==="network"){
       $("#orbSubtitle").textContent="The browser speech service lost its connection. Check your internet connection; Rohan AI will keep trying to listen.";
     }else if(e.error!=="no-speech"&&e.error!=="aborted"){
-      $("#orbSubtitle").textContent="Microphone issue: "+e.error+". Try switching Hey Rohan off and on again.";
+      $("#orbSubtitle").textContent="Microphone issue: "+e.error+". Try switching Hey Rowan off and on again.";
     }
   };
   rec.onend=()=>{
@@ -104,7 +105,7 @@ function speechRecognition(){
               if(state.listening&&state.wake){try{rec.start();}catch{}}
             },1200);
           }else{
-            $("#orbSubtitle").textContent="Wake-word listening stopped: "+error.message+". Switch Hey Rohan off and on to retry.";
+            $("#orbSubtitle").textContent="Wake-word listening stopped: "+error.message+". Switch Hey Rowan off and on to retry.";
           }
         }
       },900);
@@ -140,10 +141,10 @@ async function startRecognition(wake=false){
   }
   if(!state.recognition)state.recognition=speechRecognition();
   state.wake=wake;state.recognition.continuous=wake;state.listening=true;
-  $("#listenLabel").textContent=wake?"LISTENING FOR HEY ROHAN":"LISTENING…";
+  $("#listenLabel").textContent=wake?"LISTENING FOR HEY ROWAN":"LISTENING…";
   $("#listenButton").classList.add("listening");
-  setMood("listening",wake?"ALWAYS LISTENING FOR HEY ROHAN":"I'M LISTENING");
-  $("#orbSubtitle").textContent=wake?"Say “Hey Rohan” followed by your request.":"Go ahead — I'm listening.";
+  setMood("listening",wake?"ALWAYS LISTENING FOR HEY ROWAN":"I'M LISTENING");
+  $("#orbSubtitle").textContent=wake?"Say “Hey Rowan” followed by your request.":"Go ahead — I'm listening.";
   try{state.recognition.start();}
   catch(error){
     state.listening=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
