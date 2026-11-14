@@ -38,29 +38,86 @@ async function speak(text){
 function reply(text){addMessage(text);$("#orbHeading").textContent="I'm on it.";$("#orbSubtitle").textContent=text.length>65?text.slice(0,65)+"…":text;speak(text);}
 function handleCommand(raw){const text=raw.trim();if(!text)return;addMessage(text,"user");const t=text.toLowerCase().replace(/[.!?]/g,"");if(/^(hey )?rohan[, ]*/.test(t)){}if(/(hello|hi rohan|hey rohan|good morning)/.test(t)){reply("Hello! Lovely to hear from you. What would you like to do?");return;}if(/(what can you do|help|commands)/.test(t)){reply("I can open games, play my original music soundscapes, tell you the time and date, change settings, and speak using your chosen Cartesia voice. Try saying, open games, play music, or what time is it.");return;}if(/(time is it|current time)/.test(t)){reply("It's "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".");return;}if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}if(/(open|go to|show).*(music|song|player)/.test(t)||/play (some )?music|play (orange horizon|sunny side up|galaxy drift)/.test(t)){go("music");if(t.includes("sunny"))selectTrack("upbeat");else if(t.includes("galaxy"))selectTrack("space");else if(t.includes("orange"))selectTrack("focus");startMusic();reply("Music time! I've opened the music player. Your soundscape is ready.");return;}if(/(pause|stop) music/.test(t)){stopMusic();reply("Music paused.");return;}if(/(next|skip) (track|song)/.test(t)){cycleTrack(1);reply("Here's the next soundscape.");return;}if(/(voice|change how you sound|voice settings)/.test(t)){go("voice");reply("Let's choose how I sound. Open the voice list to pick a Cartesia voice.");return;}if(/(settings|wake word|microphone)/.test(t)){go("settings");reply("I've opened your settings.");return;}if(/(volume up|louder)/.test(t)){state.assistantVolume=Math.min(100,state.assistantVolume+10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume up.");return;}if(/(volume down|quieter)/.test(t)){state.assistantVolume=Math.max(0,state.assistantVolume-10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume down.");return;}if(/(new game|restart game)/.test(t)){go("games");resetGame();reply("A fresh board! You're X. Your move.");return;}const move=t.match(/(?:move|put|place) (?:an? )?([1-9])|square ([1-9])/);if(move){const n=Number(move[1]||move[2])-1;if(state.page==="games"&&playMove(n)){reply("Move made.");}else reply("I couldn't make that move. Open games and choose an empty square.");return;}reply("I'm still learning that one. Try asking me to open games, play music, tell you the time, or open settings.");}
 function submitCommand(){const input=$("#commandInput"),v=input.value;input.value="";handleCommand(v);}$("#sendCommand").onclick=submitCommand;$("#commandInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitCommand();});$$("[data-command]").forEach(b=>b.addEventListener("click",()=>handleCommand(b.dataset.command)));
-function speechRecognition(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;const rec=new SR();rec.lang="en-GB";rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=3;rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const heard=e.results[i][0].transcript.trim();if(!heard)continue;if(state.wake){const match=heard.match(/\bhey[ ,]+(?:rohan|rowan)\b[,.! ]*(.*)$/i);if(match){const command=(match[1]||"").trim();state.listening=false;try{rec.stop();}catch{}$("#orbHeading").textContent="Yes, Rohan?";$("#orbSubtitle").textContent=command?"I'm listening to your request.":"What can I do for you?";if(command)handleCommand(command);else reply("Yes, Rohan? I'm listening.");}}else{stopRecognition();handleCommand(heard);}}};rec.onerror=e=>{
-  if(e.error==="not-allowed"||e.error==="service-not-allowed"){
-    state.listening=false;state.wake=false;$("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome, then try again.";
-    $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
-    setMood("","MICROPHONE PERMISSION NEEDED");
-    $("#voiceScreenTitle").textContent="Microphone permission needed";
-    $("#voiceScreenText").textContent="Select the site icon beside the address bar, allow Microphone, and press Start Talking again.";
-  } else if(e.error==="network"){
-    $("#orbSubtitle").textContent="Speech recognition could not reach the browser's recognition service. Check your internet connection and try again.";
-  } else if(e.error!=="no-speech"&&e.error!=="aborted") $("#orbSubtitle").textContent="Microphone issue: "+e.error+". Try again.";
-};
-rec.onend=()=>{
-  if(state.listening&&state.wake){
-    clearTimeout(state.restartTimer);
-    state.restartTimer=setTimeout(()=>{if(state.listening&&state.wake){try{rec.start();}catch{}}},700);
-  } else if(state.listening){
-    state.listening=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
-    setMood("","READY WHEN YOU ARE");
-    $("#voiceScreenTitle").textContent="I didn't catch that";
-    $("#voiceScreenText").textContent="Press Start Talking and try speaking a little closer to your microphone.";
-  }
-};
-return rec;}
+function speechRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return null;
+  const rec=new SR();
+  rec.lang="en-GB";
+  rec.continuous=true;
+  rec.interimResults=false;
+  rec.maxAlternatives=5;
+  rec.onresult=e=>{
+    if(!state.listening)return;
+    // Join all final result segments: browsers can split "Hey" and "Rohan" into separate results.
+    const heard=Array.from(e.results)
+      .filter(result=>result.isFinal)
+      .map(result=>result[0]?.transcript||"")
+      .join(" ")
+      .trim();
+    if(!heard)return;
+    if(state.wake){
+      const normalised=heard.toLowerCase().replace(/[’']/g,"").replace(/\\s+/g," ").trim();
+      const match=normalised.match(/\\b(?:(?:hey|okay|ok)\\s+)?(?:rohan|rowan)\\b[,.! ]*(.*)$/i);
+      if(match){
+        const command=(match[1]||"").trim();
+        state.listening=false;
+        clearTimeout(state.restartTimer);
+        try{rec.stop();}catch{}
+        $("#listenButton").classList.remove("listening");
+        $("#listenLabel").textContent="START TALKING";
+        $("#orbHeading").textContent="Yes, Rohan?";
+        $("#orbSubtitle").textContent=command?"I'm listening to your request.":"What can I do for you?";
+        if(command)handleCommand(command);
+        else reply("Yes, Rohan? I'm listening.");
+      }
+    }else{
+      stopRecognition();
+      handleCommand(heard);
+    }
+  };
+  rec.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+      state.listening=false;state.wake=false;
+      $("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome, then switch on Hey Rohan again.";
+      $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
+      $("#wakeToggle").checked=false;
+      setMood("","MICROPHONE PERMISSION NEEDED");
+      $("#voiceScreenTitle").textContent="Microphone permission needed";
+      $("#voiceScreenText").textContent="Select the site icon beside the address bar, allow Microphone, then switch on Hey Rohan again.";
+    }else if(e.error==="network"){
+      $("#orbSubtitle").textContent="The browser speech service lost its connection. Check your internet connection; Rohan AI will keep trying to listen.";
+    }else if(e.error!=="no-speech"&&e.error!=="aborted"){
+      $("#orbSubtitle").textContent="Microphone issue: "+e.error+". Try switching Hey Rohan off and on again.";
+    }
+  };
+  rec.onend=()=>{
+    if(state.listening&&state.wake){
+      clearTimeout(state.restartTimer);
+      state.restartTimer=setTimeout(()=>{
+        if(!state.listening||!state.wake)return;
+        try{rec.start();}
+        catch(error){
+          // A short delay avoids the browser's start/stop transition race.
+          if(error.name==="InvalidStateError"){
+            clearTimeout(state.restartTimer);
+            state.restartTimer=setTimeout(()=>{
+              if(state.listening&&state.wake){try{rec.start();}catch{}}
+            },1200);
+          }else{
+            $("#orbSubtitle").textContent="Wake-word listening stopped: "+error.message+". Switch Hey Rohan off and on to retry.";
+          }
+        }
+      },900);
+    }else if(state.listening){
+      state.listening=false;
+      $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
+      setMood("","READY WHEN YOU ARE");
+      $("#voiceScreenTitle").textContent="I didn't catch that";
+      $("#voiceScreenText").textContent="Press Start Talking and try speaking a little closer to your microphone.";
+    }
+  };
+  return rec;
+}
 async function startRecognition(wake=false){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){
