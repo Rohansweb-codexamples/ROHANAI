@@ -96,7 +96,7 @@ app.post("/api/device/command", (req, res) => {
   const allowed = ["play", "pause", "next", "previous", "volume", "track"];
   if (!command || !allowed.includes(command.type)) return res.status(400).json({ error: "Unsupported speaker command." });
   if (command.type === "volume" && (!Number.isFinite(command.value) || command.value < 0 || command.value > 1)) return res.status(400).json({ error: "Volume must be between 0 and 1." });
-  if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value) && !(typeof command.value === "string" && /^\\/api\\/music\\/file\\/[a-f0-9]{24}\\.(mp3|wav|ogg|m4a|aac)$/.test(command.value))) return res.status(400).json({ error: "That track is not available." });
+  if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value) && !(typeof command.value === "string" && /^\/api\/music\/file\/[a-f0-9]{24}\.(mp3|wav|ogg|m4a|aac)$/.test(command.value))) return res.status(400).json({ error: "That track is not available." });
   if (command.type === "track" && command.value.startsWith("/api/music/file/") && (typeof command.name !== "string" || !command.name.trim() || command.name.length > 80)) return res.status(400).json({ error: "Give your uploaded track a name." });
   session.commands.push({ id: randomBytes(8).toString("hex"), ...command, at: Date.now() });
   saveDeviceSessions();
@@ -157,7 +157,7 @@ app.post("/api/music/upload", express.raw({ type: "audio/*", limit: "40mb" }), (
 });
 app.get("/api/music/file/:filename", (req, res) => {
   const filename = String(req.params.filename || "");
-  if (!/^[a-f0-9]{24}\\.(mp3|wav|ogg|m4a|aac)$/.test(filename)) return res.sendStatus(404);
+  if (!/^[a-f0-9]{24}\.(mp3|wav|ogg|m4a|aac)$/.test(filename)) return res.sendStatus(404);
   res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
   res.sendFile(path.join(DATA_DIR, "music", filename), error => { if (error && !res.headersSent) res.sendStatus(404); });
 });
