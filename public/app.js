@@ -113,7 +113,7 @@ function scheduleRecognitionRestart(delay=700){
   state.restartTimer=setTimeout(()=>startRecognitionEngine(),delay);
 }
 function startRecognitionEngine(){
-  if(!state.listening||!state.wake||state.recognitionRunning||state.recognitionStarting||!state.recognition)return;
+  if(!state.listening||state.recognitionRunning||state.recognitionStarting||!state.recognition)return;
   state.recognitionStarting=true;
   try{state.recognition.start();}
   catch(error){
