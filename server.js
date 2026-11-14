@@ -49,9 +49,9 @@ app.get("/api/voices", async (_req, res) => {
       return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
     }
     const source = Array.isArray(data) ? data : (data.data || data.voices || data.items || []);
-    const first = source.find(v => v && v.id);
-    if (!first) return res.status(502).json({ error: "Cartesia returned no available voices for this API key." });
-    res.json({ voice: { id: first.id, name: first.name || first.description || "Rohan's Cartesia voice" } });
+    const voices = source.filter(v => v && v.id).slice(0, 50).map(v => ({ id: v.id, name: v.name || v.description || "Cartesia voice" }));
+    if (!voices.length) return res.status(502).json({ error: "Cartesia returned no available voices for this API key." });
+    res.json({ voices, voice: voices[0] });
   } catch (error) {
     console.error("Cartesia voices error:", error.message);
     res.status(502).json({ error: "Could not connect to Cartesia voice service." });
