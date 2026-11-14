@@ -133,10 +133,10 @@ function speechRecognition(){
   rec.maxAlternatives=5;
   rec.onstart=()=>{
     state.recognitionRunning=true;state.recognitionStarting=false;state.restartDelay=700;
-    if(state.listening&&state.wake){
-      $("#listenLabel").textContent="ALWAYS LISTENING";
+    if(state.listening){
+      $("#listenLabel").textContent="LISTENING — SPEAK NOW";
       $("#listenButton").classList.add("listening");
-      setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");
+      setMood("listening","MICROPHONE ACTIVE — SPEAK NOW");
       $("#voiceScreenTitle").textContent="Microphone is active";
       $("#voiceScreenText").textContent="Say what you need now. No name or wake word is required.";
     }
