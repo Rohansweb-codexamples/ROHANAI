@@ -427,7 +427,8 @@ function stopRecognition(){
 function primeMusicPlayback(){try{musicElement.muted=true;const attempt=musicElement.play();if(attempt&&typeof attempt.then==="function"){attempt.then(()=>{musicElement.pause();musicElement.currentTime=0;musicElement.muted=false;}).catch(()=>{musicElement.muted=false;});}else{musicElement.muted=false;}}catch{musicElement.muted=false;}}
 $("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Spark is off";$("#voiceScreenText").textContent="Press Activate Spark to turn hands-free listening back on.";}else{primeMusicPlayback();startRecognition(true);}};
 function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");$("#settingsSpeechSpeed").value=state.speed;$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";}
-// Manual activation only; no wake-word listener is started.
+// Spark wake mode remains active and reconnects whenever the browser ends a recognition session.
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&state.wake){state.listening=true;scheduleRecognitionRestart(250);}});
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
 $("#themeToggle").onchange=e=>document.body.classList.toggle("no-glow",!e.target.checked);
 $("#assistantVolume").oninput=e=>{state.assistantVolume=Number(e.target.value);$("#assistantVolumeValue").textContent=state.assistantVolume+"%";if(state.audio)state.audio.volume=state.assistantVolume/100;localStorage.setItem("rohanVolume",state.assistantVolume);};
