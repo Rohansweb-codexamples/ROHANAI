@@ -109,7 +109,7 @@ app.post("/api/device/poll", (req, res) => {
   session.speakerConnected = true;
   const commands = session.commands.splice(0);
   saveDeviceSessions();
-  res.json({ ok: true, commands, controllerConnected: true });
+  res.json({ ok: true, commands, controllerConnected: Boolean(session.controllerToken) });
 });
 app.post("/api/device/heartbeat", (req, res) => {
   const session = findDeviceByToken(req.body?.token, "speaker");
