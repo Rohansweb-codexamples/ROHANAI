@@ -320,7 +320,7 @@ function speechRecognition(){
       const result=e.results[i];
       if(!result.isFinal)continue;
       const alternatives=Array.from(result).map(x=>(x.transcript||"").trim()).filter(Boolean);
-      const heard=(alternatives.find(x=>/\\bspark\\b/i.test(x))||alternatives[0]||"").trim();
+      const heard=(alternatives.find(x=>/\bspark\b/i.test(x))||alternatives[0]||"").trim();
       if(!heard)continue;
       if(state.speaking){
         if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
