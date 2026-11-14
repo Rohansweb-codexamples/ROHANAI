@@ -14,7 +14,7 @@ async function askWeb(question){try{say("I'll search the web for that.");const r
 function handle(raw){wakeUntil=Date.now()+15000;const t=raw.toLowerCase().replace(/[.!?,]/g,"").replace(/^spark\s*/,"").trim();if(!t)return;mood(wakeUntil>Date.now()?"wake":"listening");
 if(/^(?:please )?(?:cancel|stop|clear)(?: the| my)? timer$/.test(t)){pendingTimer=false;clearTimeout(timerId);timerId=0;timerEnd=0;localStorage.removeItem("rohanSpeakerTimerEnd");say("Timer cancelled.");return;}
 if(/^(?:set|start)(?: me)?(?: a)? timer$/.test(t)){pendingTimer=true;say("How long should I set the timer for?");return;}
-if(pendingTimer){if(setTimer("set timer for "+t)){pendingTimer=false;return;}if(/\b(?:cancel|stop)\b/.test(t)){pendingTimer=false;}else{pendingTimer=false;}}
+if(pendingTimer){pendingTimer=false;if(/\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|twenty|thirty|forty|fifty|sixty|a|an)\s*(?:hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/i.test(t)){if(setTimer("set timer for "+t))return;}}
 if(quiz&&answerQuiz(t))return;
 if(pendingQuizTopic){const topic=t.match(/\b(nature|baking|science)\b/);if(topic){pendingQuizTopic=false;startQuiz(topic[1]);return;}if(/\b(cancel|stop)\b/.test(t)){pendingQuizTopic=false;say("Quiz cancelled.");return;}say("Choose a nature, baking or science quiz.");return;}
 const quizMatch=t.match(/^(?:(?:start|begin|play|do)\s+(?:me\s+)?(?:a\s+)?)(nature|baking|science)(?:\s+quiz)?$|^(?:start|begin|play|do)\s+(?:me\s+)?(?:a\s+)?(nature|baking|science)\s+quiz$/);
@@ -23,7 +23,7 @@ if(/^(?:play|start|begin|do)(?: me)?(?: a)? quiz$|^quiz$/.test(t)){pendingQuizTo
 if(/^(cancel|stop) quiz$/.test(t)){quiz=null;pendingQuizTopic=false;say("Quiz cancelled.");return;}
 if(/^(cancel|stop) timer$/.test(t)){clearTimeout(timerId);timerEnd=0;localStorage.removeItem("rohanSpeakerTimerEnd");say("Timer cancelled.");return;}
 if(/^how much time is left$|^what is the time left on (my )?timer$|^time remaining$/.test(t)){const left=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));say(timerEnd&&left?Math.floor(left/60)+" minutes and "+(left%60)+" seconds remaining.":"There is no timer running.");return;}
-if(/\b(timer|countdown)\b/.test(t)||/^(?:set|start|put on)\b/.test(t)){if(setTimer(t))return;}
+if(/\b(timer|countdown)\b/.test(t)){if(setTimer(t))return;}
 if(birthdayCommand(t))return;
 if(/^(?:calculate|work out|what is|what's|how much is)\b/.test(t)&&calculate(t))return;
 if(/^play house$|^play music$|^start music$/.test(t)){choose(0);say("Playing House.");return;}
