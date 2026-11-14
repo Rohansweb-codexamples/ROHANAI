@@ -17,6 +17,7 @@ body{min-height:100dvh;display:grid;place-items:center;background:radial-gradien
 .spark:before,.spark:after{content:"";position:absolute;inset:-13%;border:1px solid #76d9ff66;border-radius:50%;animation:ring 4s ease-in-out infinite;pointer-events:none}
 .spark:after{inset:-25%;opacity:.5;animation-delay:-2s}
 .spark span{font-size:clamp(48px,14vw,100px);font-weight:900;letter-spacing:-.08em;color:#07162a;text-shadow:0 2px 14px #fff9;user-select:none}
+.spark.wake{background:radial-gradient(circle at 32% 25%,#fff0f8,#ff9bd2 34%,#f04d9b 66%,#70285f);box-shadow:0 0 58px #ff72c4bb,0 0 145px #f04d9b66,inset 0 0 30px #fff9;transform:scale(1.04)}
 .spark.listening{background:radial-gradient(circle at 32% 25%,#fff4db,#ffb34d 36%,#f16c32 68%,#702d57);box-shadow:0 0 55px #ff9b42aa,0 0 140px #ff692f55,inset 0 0 30px #fff9;transform:scale(1.035)}
 .spark.speaking{background:radial-gradient(circle at 32% 25%,#f3eaff,#c18aff 36%,#7959ec 68%,#32216e);box-shadow:0 0 55px #a783ffaa,0 0 140px #765bff66,inset 0 0 30px #fff9}
 .spark.error{background:radial-gradient(circle at 32% 25%,#fff,#ff7777 36%,#b62d55 70%,#42172e);box-shadow:0 0 45px #ff557788}
@@ -28,10 +29,10 @@ body{min-height:100dvh;display:grid;place-items:center;background:radial-gradien
 </head>
 <body>
 <main class="stage">
-<div class="clock-panel"><div class="clock" id="clock">--:--:--</div><div class="timer-display" id="timerDisplay"></div></div><button class="spark" id="spark" type="button" aria-label="Tap once to activate Spark voice listening"><span>S</span></button>
+<div class="clock-panel"><div class="clock" id="clock">--:--:--</div><div class="timer-display" id="timerDisplay"></div></div><button class="spark" id="spark" type="button" aria-label="Tap once to start always-on Spark listening"><span>S</span></button>
 <div class="pair-code" id="pairCode" aria-hidden="true"></div>
 </main>
 <audio id="audio" preload="metadata"></audio>
-<script src="/speaker.js?v=12"></script>
+<script src="/speaker.js?v=13"></script>
 </body>
 </html>
