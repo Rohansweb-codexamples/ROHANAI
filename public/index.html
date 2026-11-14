@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,0,0&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css?v=16">
+  <link rel="stylesheet" href="/styles.css?v=17">
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -20,6 +20,7 @@
       <nav class="nav-list" aria-label="Main navigation">
         <button class="nav-item active" data-page="home"><span class="nav-icon"><span class="material-symbols-rounded">home</span></span>Home</button>
         <button class="nav-item" data-page="games"><span class="nav-icon"><span class="material-symbols-rounded">stadia_controller</span></span>Games</button>
+        <button class="nav-item" data-page="quiz"><span class="nav-icon"><span class="material-symbols-rounded">quiz</span></span>Audio quiz</button>
         <button class="nav-item" data-page="music"><span class="nav-icon"><span class="material-symbols-rounded">music_note</span></span>Music</button>
         <button class="nav-item" data-page="voice"><span class="nav-icon"><span class="material-symbols-rounded">mic</span></span>Voice</button>
         <button class="nav-item" data-page="settings"><span class="nav-icon"><span class="material-symbols-rounded">settings</span></span>Settings</button>
@@ -56,6 +57,19 @@
       <section class="page" id="page-games">
         <div class="section-intro"><span class="card-kicker">PLAY TIME</span><h2>A quick little challenge.</h2><p>Play noughts and crosses against Rohan AI. You are X, I'm O.</p></div>
         <div class="game-layout"><div class="game-board-card"><div class="game-status"><span class="turn-dot"></span><strong id="gameStatus">Your turn — X</strong><button class="soft-button" id="resetGame">↻ New game</button></div><div class="board" id="board" role="group" aria-label="Noughts and crosses board"></div><div class="game-footer"><span id="scoreLine">You 0 <b>·</b> AI 0 <b>·</b> Draws 0</span><span class="difficulty">SMART OPPONENT</span></div></div><div class="game-aside"><div class="score-tile"><span>YOUR SYMBOL</span><strong class="x-mark">X</strong><small>Make three in a row</small></div><div class="score-tile orange-tile"><span>ROHAN AI</span><strong class="o-mark">O</strong><small>I'll do my best!</small></div></div></div>
+      </section>
+
+      <section class="page" id="page-quiz">
+        <div class="section-intro"><span class="card-kicker">LISTEN • THINK • ANSWER</span><h2>Audio quiz.</h2><p>Say “options” to hear the topics, then say the topic you want to play.</p></div>
+        <div class="audio-quiz-card">
+          <div class="quiz-orb"><span class="material-symbols-rounded">graphic_eq</span></div>
+          <div class="quiz-copy"><span class="card-kicker">VOICE-POWERED CHALLENGE</span><h3 id="quizHeading">Ready for a quiz?</h3><p id="quizPrompt">Press Start audio quiz. Rohan AI will listen for “options”, read the topics, and wait for you to choose one.</p></div>
+          <div class="quiz-topic-list" id="quizTopicList"><span>Science</span><span>Space</span><span>Animals</span><span>Nature</span><span>Computing</span><span>Maths</span><span>History</span><span>Geography</span></div>
+          <div class="quiz-progress"><span id="quizProgress">No quiz started</span><strong id="quizScore">Score: 0</strong></div>
+          <button class="primary-button quiz-start" id="startAudioQuiz"><span class="material-symbols-rounded">mic</span> Start audio quiz</button>
+          <button class="soft-button quiz-stop" id="stopAudioQuiz">End quiz</button>
+          <p class="quiz-hint" id="quizHint">Use headphones or keep your device volume up. Microphone permission is needed.</p>
+        </div>
       </section>
 
       <section class="page" id="page-music">
@@ -97,7 +111,27 @@
       <footer class="footer">ROHAN AI <span>·</span> YOUR OWN LITTLE CORNER OF THE INTERNET</footer>
     </main>
   </div>
+  <div class="welcome-setup-overlay" id="welcomeSetup" aria-modal="true" role="dialog" aria-labelledby="welcomeSetupTitle">
+    <div class="welcome-setup-panel">
+      <div class="welcome-setup-mark">R</div>
+      <span class="card-kicker">LET'S GET STARTED</span>
+      <h2 id="welcomeSetupTitle">Make Rohan AI yours.</h2>
+      <p>Choose the voice and colour you want. You can change them later in settings.</p>
+      <label class="setup-field-label" for="welcomeVoiceSelect">Assistant voice</label>
+      <select id="welcomeVoiceSelect" class="welcome-voice-select"><option value="">Loading available voices…</option></select>
+      <div class="welcome-voice-status" id="welcomeVoiceStatus">Connecting to Cartesia voices…</div>
+      <div class="setup-field-label">Choose your colour</div>
+      <div class="accent-choices">
+        <button class="accent-choice selected" data-accent="blue" type="button"><i class="accent-dot blue-dot"></i><span>Ocean blue</span></button>
+        <button class="accent-choice" data-accent="orange" type="button"><i class="accent-dot orange-dot"></i><span>Sunset orange</span></button>
+        <button class="accent-choice" data-accent="green" type="button"><i class="accent-dot green-dot"></i><span>Forest green</span></button>
+        <button class="accent-choice" data-accent="pink" type="button"><i class="accent-dot pink-dot"></i><span>Pink glow</span></button>
+      </div>
+      <button class="primary-button finish-setup" id="finishSetup" type="button">Finish setup <span class="material-symbols-rounded">arrow_forward</span></button>
+      <small class="welcome-setup-foot">Your choices are saved on this device.</small>
+    </div>
+  </div>
   <audio id="ttsAudio" hidden></audio>
-  <script src="/app.js?v=15" defer></script>
+  <script src="/app.js?v=16" defer></script>
 </body>
 </html>
