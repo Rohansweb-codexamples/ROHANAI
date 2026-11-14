@@ -3,6 +3,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import path from "node:path";
+import fs from "node:fs";
 import { randomBytes, randomInt } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
@@ -19,12 +20,28 @@ app.use(express.json({ limit: "12kb" }));
 app.use("/api", rateLimit({ windowMs: 60_000, limit: 180, standardHeaders: "draft-8", legacyHeaders: false }));
 
 const deviceSessions = new Map();
-const DEVICE_TTL = 12 * 60 * 60 * 1000;
+const DEVICE_TTL = 365 * 24 * 60 * 60 * 1000;
+const DATA_DIR = process.env.ROHAN_DATA_DIR || path.join(__dirname, "data");
+const DEVICE_STORE = path.join(DATA_DIR, "device-sessions.json");
+try {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const saved = JSON.parse(fs.readFileSync(DEVICE_STORE, "utf8"));
+  for (const item of saved) if (item && item.code && item.controllerToken) deviceSessions.set(item.code, item);
+} catch {}
+function saveDeviceSessions() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    const temp = DEVICE_STORE + ".tmp";
+    fs.writeFileSync(temp, JSON.stringify([...deviceSessions.values()]), { mode: 0o600 });
+    fs.renameSync(temp, DEVICE_STORE);
+  } catch (error) { console.error("Could not persist device sessions:", error.message); }
+}
 function cleanDeviceSessions() {
   const now = Date.now();
   for (const [code, session] of deviceSessions) {
     if (now - session.createdAt > DEVICE_TTL) deviceSessions.delete(code);
   }
+  saveDeviceSessions();
 }
 function findDeviceByToken(token, role) {
   if (typeof token !== "string") return null;
@@ -44,6 +61,7 @@ app.post("/api/device/create", (_req, res) => {
     commands: [], state: { playing: false, track: "House", currentTime: 0, duration: 0, volume: 0.85 }
   };
   deviceSessions.set(code, session);
+  saveDeviceSessions();
   res.json({ ok: true, code, token: session.controllerToken, expiresIn: DEVICE_TTL });
 });
 app.post("/api/device/join", (req, res) => {
@@ -55,6 +73,7 @@ app.post("/api/device/join", (req, res) => {
   session.speakerToken = randomBytes(24).toString("hex");
   session.speakerConnected = true;
   session.lastSeen = Date.now();
+  saveDeviceSessions();
   res.json({ ok: true, token: session.speakerToken, controllerConnected: true });
 });
 app.post("/api/device/command", (req, res) => {
@@ -66,7 +85,9 @@ app.post("/api/device/command", (req, res) => {
   if (command.type === "volume" && (!Number.isFinite(command.value) || command.value < 0 || command.value > 1)) return res.status(400).json({ error: "Volume must be between 0 and 1." });
   if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value)) return res.status(400).json({ error: "That track is not available." });
   session.commands.push({ id: randomBytes(8).toString("hex"), ...command, at: Date.now() });
+  saveDeviceSessions();
   if (session.commands.length > 30) session.commands.splice(0, session.commands.length - 30);
+  saveDeviceSessions();
   res.json({ ok: true });
 });
 app.post("/api/device/poll", (req, res) => {
@@ -75,6 +96,7 @@ app.post("/api/device/poll", (req, res) => {
   session.lastSeen = Date.now();
   session.speakerConnected = true;
   const commands = session.commands.splice(0);
+  saveDeviceSessions();
   res.json({ ok: true, commands, controllerConnected: true });
 });
 app.post("/api/device/heartbeat", (req, res) => {
@@ -90,18 +112,20 @@ app.post("/api/device/heartbeat", (req, res) => {
     duration: Number.isFinite(input.duration) ? Math.max(0, input.duration) : 0,
     volume: Number.isFinite(input.volume) ? Math.min(1, Math.max(0, input.volume)) : 0.85
   };
+  saveDeviceSessions();
   res.json({ ok: true });
 });
 app.post("/api/device/state", (req, res) => {
   const session = findDeviceByToken(req.body?.token, "controller");
   if (!session) return res.status(401).json({ error: "Controller session expired. Refresh this page to create a new pairing code." });
   const connected = Boolean(session.speakerToken && session.speakerConnected && Date.now() - session.lastSeen < 15000);
-  res.json({ ok: true, connected, state: session.state, code: session.code });
+  res.json({ ok: true, connected, state: session.state, code: session.code, createdAt: session.createdAt });
 });
 app.post("/api/device/disconnect", (req, res) => {
   const session = findDeviceByToken(req.body?.token, "controller");
   if (!session) return res.status(401).json({ error: "Controller session expired." });
   deviceSessions.delete(session.code);
+  saveDeviceSessions();
   res.json({ ok: true });
 });
 
