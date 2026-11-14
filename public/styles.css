@@ -333,3 +333,5 @@ body[data-accent="pink"] .brand-mark,body[data-accent="pink"] .settings-icon,bod
 @media(max-width:600px){.welcome-setup-panel{padding:22px 18px;border-radius:20px}.audio-quiz-card{padding:22px 16px;border-radius:20px}.quiz-orb{width:88px;height:88px}}
 
 .welcome-preview{margin-top:10px;min-height:38px;padding:8px 12px;font-size:11px}
+
+.settings-accent-choices{margin-top:8px}.settings-accent-choices .accent-choice{min-height:42px;padding:8px 10px;font-size:11px}
