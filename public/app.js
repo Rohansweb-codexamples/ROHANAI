@@ -109,6 +109,9 @@ const quizBank={
 const quizTopics=["science","space","animals","nature","computing","maths","history","geography"];
 function cleanQuizAnswer(v){return v.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
 function startAudioQuiz(){state.quiz={active:true,phase:"topic",topic:"",index:0,score:0,questions:[]};$("#quizHeading").textContent="I'm listening for a topic";$("#quizPrompt").textContent="Say “options” to hear the topics, or say a topic name now.";$("#quizProgress").textContent="Waiting for your topic";$("#quizScore").textContent="Score: 0";$("#quizHint").textContent="Listening starts now. Say “options” or a topic such as Space or Science.";$("#startAudioQuiz").textContent="Listening for topic…";startRecognition(false);}
+function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";}
+$("#startAudioQuiz").addEventListener("click",()=>{if(state.quiz.active){stopRecognition();startRecognition(false);}else startAudioQuiz();});
+$("#stopAudioQuiz").addEventListener("click",stopAudioQuiz);
 async function quizListenAgain(){if(!state.quiz.active)return;$("#startAudioQuiz").textContent="Listening…";startRecognition(false);}
 async function askQuizQuestion(){
  const q=state.quiz.questions[state.quiz.index];
