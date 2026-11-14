@@ -38,3 +38,8 @@
 .upload-music label{display:block;color:var(--accent);font-size:9px;font-weight:900;letter-spacing:1.5px;margin-bottom:9px}
 .upload-music input{width:100%;color:#c8d4e6;font-size:11px}
 .upload-music small{display:block;color:#8798b2;font-size:10px;margin-top:8px;line-height:1.5}
+
+.music-dock{position:sticky;bottom:10px;z-index:5;display:flex;align-items:center;gap:12px;margin:16px 0 8px;padding:12px 13px;border:1px solid #53617b;border-radius:18px;background:#0b1424f2;backdrop-filter:blur(18px);box-shadow:0 12px 35px #0008}
+.dock-meta{min-width:0;flex:1}.dock-meta strong,.dock-meta small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dock-meta strong{font:700 13px "Space Grotesk";color:#f5f7ff}.dock-meta small{font-size:8px;letter-spacing:1px;color:#9aaac0;margin-top:3px}.dock-progress{height:3px;border-radius:5px;background:#35445d;margin-top:8px;overflow:hidden}.dock-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.dock-buttons{display:flex;gap:5px}.dock-buttons button{width:34px;height:36px;border:1px solid #3a4c67;border-radius:10px;background:#192942;color:white;font-size:11px}.dock-buttons button:nth-child(2){background:linear-gradient(135deg,var(--accent),var(--accent2));color:#171522;border:0}
+body{padding-bottom:35px}
