@@ -321,24 +321,39 @@ async function loadStatus(){
   }catch{$("#connectionText").textContent="Server unavailable";$("#keyStatus").textContent="Server unavailable";}
 }
 async function loadVoices(){
- const list=$("#voiceList");list.innerHTML='<div class="loading-line">Connecting to Cartesia…</div>';
+ const list=$("#voiceList"),select=$("#welcomeVoiceSelect"),status=$("#welcomeVoiceStatus");
+ list.innerHTML='<div class="loading-line">Loading your Cartesia voice…</div>';
+ select.innerHTML='<option value="">Loading voice…</option>';select.disabled=true;
+ status.textContent="Connecting to Cartesia. This usually takes a few seconds.";
+ $("#refreshVoices").disabled=true;
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
  try{
-  const r=await fetch("/api/voices",{cache:"no-store"}),d=await r.json();if(!r.ok)throw new Error(d.error||"Cartesia voice service is unavailable");
-  let voices=Array.isArray(d.voices)?d.voices:(d.voice?[d.voice]:[]);
-  if(!voices.length&&d.voice&&typeof d.voice==="object")voices=[d.voice];
-  voices=voices.filter(v=>v&&typeof v.id==="string"&&v.id.trim());
-  if(!voices.length)throw new Error(d.error||"Cartesia did not return any usable voices.");
-  state.voices=voices;const saved=localStorage.getItem("rohanVoiceId");
-  state.voiceId=voices.find(v=>v.id===saved)?.id||voices[0].id;localStorage.setItem("rohanVoiceId",state.voiceId);
-  renderVoices();renderSetupVoiceOptions();$("#voiceNote").textContent=voices.length+" Cartesia voice"+(voices.length===1?" is":"s are")+" available.";
+  const r=await fetch("/api/voices?single=1",{cache:"no-store",signal:controller.signal});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||"Cartesia voice service returned HTTP "+r.status);
+  const candidate=Array.isArray(d.voices)?d.voices[0]:d.voice;
+  if(!candidate||typeof candidate.id!=="string"||!candidate.id.trim())throw new Error("Cartesia did not return a usable voice.");
+  const voice={id:candidate.id,name:candidate.name||candidate.description||"Cartesia voice"};
+  state.voices=[voice];
+  const saved=localStorage.getItem("rohanVoiceId");
+  state.voiceId=saved===voice.id?saved:voice.id;
+  localStorage.setItem("rohanVoiceId",state.voiceId);
+  renderVoices();renderSetupVoiceOptions();
+  $("#voiceNote").textContent="Your Cartesia voice is ready.";
+  status.textContent="One voice available and selected. You can preview it below.";
  }catch(e){
-  state.voices=[];list.innerHTML="";const p=document.createElement("div");p.className="loading-line";p.textContent="Could not load the Cartesia voices: "+e.message;list.append(p);
-  $("#welcomeVoiceSelect").innerHTML='<option value="">Voice service unavailable</option>';$("#welcomeVoiceStatus").textContent="Check the Cartesia connection in Render, then refresh.";
-  $("#voiceNote").textContent=e.message;$("#voiceScreenTitle").textContent="Cartesia voice connection failed";$("#voiceScreenText").textContent=e.message;
+  state.voices=[];state.voiceId="";
+  list.innerHTML="";const p=document.createElement("div");p.className="loading-line";p.textContent=e.name==="AbortError"?"Cartesia voice loading timed out. Press Refresh to try again.":e.message;list.append(p);
+  select.innerHTML='<option value="">Voice unavailable — retry</option>';select.disabled=true;
+  status.textContent=e.name==="AbortError"?"The voice service did not respond in time.":"Voice loading failed: "+e.message;
+  $("#voiceNote").textContent=status.textContent;
+  $("#voiceScreenTitle").textContent="Cartesia voice could not load";$("#voiceScreenText").textContent=status.textContent;
+ }finally{
+  clearTimeout(timer);$("#refreshVoices").disabled=false;
  }
 }
 function chooseVoice(id){if(!state.voices.some(v=>v.id===id))return;state.voiceId=id;localStorage.setItem("rohanVoiceId",id);renderVoices();renderSetupVoiceOptions();}
-function renderSetupVoiceOptions(){const select=$("#welcomeVoiceSelect");if(!select)return;select.innerHTML="";state.voices.forEach(v=>{const o=document.createElement("option");o.value=v.id;o.textContent=v.name||"Cartesia voice";select.append(o);});select.value=state.voiceId;$("#welcomeVoiceStatus").textContent=state.voices.length+" Cartesia voice"+(state.voices.length===1?"":"s")+" available.";}
+function renderSetupVoiceOptions(){const select=$("#welcomeVoiceSelect");if(!select)return;select.innerHTML="";state.voices.forEach(v=>{const o=document.createElement("option");o.value=v.id;o.textContent=v.name||"Cartesia voice";select.append(o);});select.value=state.voiceId;select.disabled=!state.voices.length;$("#welcomeVoiceStatus").textContent=state.voices.length?"One Cartesia voice is available and selected.":"Waiting for a Cartesia voice.";}
 function renderVoices(){const list=$("#voiceList");list.innerHTML="";state.voices.forEach(v=>{const item=document.createElement("button");item.type="button";item.className="voice-option"+(v.id===state.voiceId?" selected":"");item.onclick=()=>chooseVoice(v.id);const radio=document.createElement("span");radio.className="voice-radio";const details=document.createElement("span");const name=document.createElement("strong");name.textContent=v.name||"Cartesia voice";const desc=document.createElement("small");desc.textContent="Cartesia · Sonic 3.6 · English";details.append(name,desc);item.append(radio,details);list.append(item);});}
 $("#refreshVoices").onclick=loadVoices;$("#previewVoice").onclick=()=>{if(!state.voiceId){$("#voiceNote").textContent="Wait for the Cartesia voice to load first.";return;}speak("Hello, Rohan. It is lovely to speak with you. I can help you with games, music, stories and the time. What shall we do today?");};
 function setAccent(accent){const v=["blue","orange","green","pink"].includes(accent)?accent:"blue";document.body.dataset.accent=v;localStorage.setItem("rohanAccent",v);$(".accent-choice").forEach(b=>b.classList.toggle("selected",b.dataset.accent===v));}
