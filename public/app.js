@@ -211,18 +211,44 @@ function bestMove(b){let best=-Infinity,choice=-1;for(let i=0;i<9;i++){if(b[i])c
 function minimax(b,depth,isMax){if(winner(b,"O"))return 10-depth;if(winner(b,"X"))return depth-10;if(b.every(Boolean))return 0;if(isMax){let v=-Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="O";v=Math.max(v,minimax(b,depth+1,false));b[i]="";}return v;}let v=Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="X";v=Math.min(v,minimax(b,depth+1,true));b[i]="";}return v;}
 function finishGame(result){state.gameOver=true;state.scores[result]++;const messages={you:"You won! Brilliant move, Rohan!",ai:"I won this round! Fancy another?",draw:"It's a draw! Good game."};$("#gameStatus").textContent=messages[result];renderBoard();}
 function resetGame(){state.board=Array(9).fill("");state.gameOver=false;$("#gameStatus").textContent="Your turn — X";renderBoard();}$("#resetGame").onclick=resetGame;renderBoard();
-function selectTrack(id){state.track="library";$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track==="library"));$("#nowPlaying").textContent="Your music";$("#trackDescription").textContent="Your MP3 from Rohan AI";$("#playerArt").textContent="graphic_eq";$("#playerArt").className="player-art material-symbols-rounded art-library";}
-$(".track-card").forEach(b=>b.onclick=()=>{selectTrack("library");if(!state.musicOn)startMusic();});
-function cycleTrack(){if(state.musicAudio){state.musicAudio.currentTime=0;}else{startMusic();}}
+function selectTrack(){state.track="library";$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track==="library"));$("#nowPlaying").textContent="Your music";$("#trackDescription").textContent="Your MP3 from Rohan AI";$("#playerArt").textContent="graphic_eq";$("#playerArt").className="player-art material-symbols-rounded art-library";}
+$(".track-card").forEach(b=>b.onclick=()=>{selectTrack();if(!state.musicOn)startMusic();});
+const musicElement=$("#musicAudio");
+musicElement.addEventListener("loadedmetadata",()=>{$("#duration").textContent=formatMusicTime(musicElement.duration);});
+musicElement.addEventListener("error",()=>{$("#trackDescription").textContent="Unable to load the MP3. Open the music link directly to check it is available.";state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});
+musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});
 function startMusic(){
- const track=tracks[0];
- if(!state.musicAudio){state.musicAudio=new Audio(track.src);state.musicAudio.preload="auto";state.musicAudio.addEventListener("loadedmetadata",()=>$("#duration").textContent=formatMusicTime(state.musicAudio.duration));state.musicAudio.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});state.musicAudio.addEventListener("error",()=>{$("#trackDescription").textContent="The MP3 could not be loaded. Check the music link.";state.musicOn=false;});}
- state.musicAudio.loop=true;state.musicAudio.volume=Number($("#musicVolume").value)/100;
- state.musicAudio.play().then(()=>{state.musicOn=true;$("#playMusic").innerHTML='<span class="material-symbols-rounded">pause</span>';progressMusic();}).catch(()=>{$("#trackDescription").textContent="Tap play again to start the music.";state.musicOn=false;});
+ state.musicAudio=musicElement;
+ musicElement.loop=true;
+ musicElement.volume=Number($("#musicVolume").value)/100;
+ if(musicElement.readyState===0)musicElement.load();
+ musicElement.play().then(()=>{
+   state.musicOn=true;
+   $("#trackDescription").textContent="Playing your MP3";
+   $("#playMusic").innerHTML='<span class="material-symbols-rounded">pause</span>';
+   progressMusic();
+ }).catch(error=>{
+   state.musicOn=false;
+   $("#trackDescription").textContent=error&&error.name==="NotAllowedError"?"Press play to allow music.":"Could not play the MP3. Check the file address and try again.";
+   $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
+ });
 }
-function progressMusic(){if(!state.musicOn)return;if(state.track==="library"&&state.musicAudio){const current=state.musicAudio.currentTime||0,duration=state.musicAudio.duration||0;$("#elapsed").textContent=formatMusicTime(current);$("#duration").textContent=duration?formatMusicTime(duration):"--:--";$("#musicProgress").style.width=(duration?current/duration*100:0)+"%";}else{const elapsed=(Date.now()-state.musicStarted)/1000;$("#elapsed").textContent="00:"+String(Math.floor(elapsed)%60).padStart(2,"0");$("#musicProgress").style.width=((elapsed%60)/60*100)+"%";}state.progressTimer=requestAnimationFrame(progressMusic);}function formatMusicTime(seconds){return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(Math.floor(seconds%60)).padStart(2,"0");}
-function stopMusic(){state.musicOn=false;if(state.musicAudio)state.musicAudio.pause();if(state.progressTimer)cancelAnimationFrame(state.progressTimer);$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';}
-$("#playMusic").onclick=()=>{if(state.musicOn){stopMusic();}else{startMusic();}};
-$("#musicVolume").oninput=e=>{if(state.musicAudio)state.musicAudio.volume=Number(e.target.value)/100;};
+function progressMusic(){
+ if(!state.musicOn)return;
+ const current=musicElement.currentTime||0,duration=musicElement.duration||0;
+ $("#elapsed").textContent=formatMusicTime(current);
+ $("#duration").textContent=Number.isFinite(duration)?formatMusicTime(duration):"--:--";
+ $("#musicProgress").style.width=(duration?current/duration*100:0)+"%";
+ state.progressTimer=requestAnimationFrame(progressMusic);
+}
+function formatMusicTime(seconds){if(!Number.isFinite(seconds))return "00:00";return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(Math.floor(seconds%60)).padStart(2,"0");}
+function stopMusic(){
+ state.musicOn=false;
+ musicElement.pause();
+ if(state.progressTimer)cancelAnimationFrame(state.progressTimer);
+ $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
+}
+$("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
+$("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
 setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();
