@@ -108,8 +108,40 @@ const quizBank={
 };
 const quizTopics=["science","space","animals","nature","computing","maths","history","geography"];
 function cleanQuizAnswer(v){return v.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
-function startAudioQuiz(){state.quiz={active:true,phase:"topic",topic:"",index:0,score:0,questions:[]};$("#quizHeading").textContent="I'm listening for a topic";$("#quizPrompt").textContent="Say “options” to hear the topics, or say a topic name now.";$("#quizProgress").textContent="Waiting for your topic";$("#quizScore").textContent="Score: 0";$("#quizHint").textContent="Listening starts now. Say “options” or a topic such as Space or Science.";$("#startAudioQuiz").textContent="Listening for topic…";startRecognition(false);}
-function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";}
+function renderQuizChoices(){
+ const wrap=$("#quizChoices");if(!wrap)return;wrap.innerHTML="";
+ if(!state.quiz.active){wrap.hidden=true;return;}wrap.hidden=false;
+ if(state.quiz.phase==="topic"){
+  quizTopics.forEach(topic=>{const b=document.createElement("button");b.type="button";b.className="quiz-choice topic-choice";b.textContent=topic[0].toUpperCase()+topic.slice(1);b.addEventListener("click",()=>selectQuizTopic(topic));wrap.append(b);});
+ }else if(state.quiz.phase==="answer"){
+  const q=state.quiz.questions[state.quiz.index];if(!q)return;
+  q.c.forEach((choice,i)=>{const letter=String.fromCharCode(65+i),b=document.createElement("button");b.type="button";b.className="quiz-choice answer-choice";b.innerHTML='<strong>'+letter+'</strong><span></span>';b.querySelector("span").textContent=choice;b.addEventListener("click",()=>quizSelectAnswer(letter));wrap.append(b);});
+ }
+}
+function startAudioQuiz(){
+ state.quiz={active:true,phase:"topic",topic:"",index:0,score:0,questions:[]};
+ $("#quizHeading").textContent="Choose your topic";$("#quizPrompt").textContent="Tap a topic below to begin. No microphone needed.";
+ $("#quizProgress").textContent="Choose a topic";$("#quizScore").textContent="Score: 0";
+ $("#quizHint").textContent="You can answer every question by tapping A, B or C.";
+ $("#startAudioQuiz").textContent="Restart quiz";renderQuizChoices();stopRecognition();
+}
+function selectQuizTopic(topic){
+ if(!state.quiz.active||!quizBank[topic])return;
+ state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
+ $("#quizHint").textContent="Topic selected: "+topic+". Tap A, B or C for each answer.";
+ askQuizQuestion();
+}
+async function quizSelectAnswer(letter){
+ if(!state.quiz.active||state.quiz.phase!=="answer")return;
+ const q=state.quiz.questions[state.quiz.index],selected=letter.toUpperCase(),correct=selected===q.a;
+ if(correct)state.quiz.score++;
+ $("#quizHint").textContent=correct?"Correct!":"The correct answer was "+q.a+". "+q.c[q.a.charCodeAt(0)-65]+".";
+ $("#quizScore").textContent="Score: "+state.quiz.score;
+ state.quiz.index++;
+ if(state.quiz.index>=state.quiz.questions.length){await finishAudioQuiz();}
+ else askQuizQuestion();
+}
+function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";renderQuizChoices();}
 $("#startAudioQuiz").addEventListener("click",()=>{if(state.quiz.active){stopRecognition();startRecognition(false);}else startAudioQuiz();});
 $("#stopAudioQuiz").addEventListener("click",stopAudioQuiz);
 async function quizListenAgain(){
@@ -145,9 +177,8 @@ async function askQuizQuestion(){
  $("#quizPrompt").textContent=q.q+"\n\n"+options.join("\n");
  $("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;
  $("#quizScore").textContent="Score: "+state.quiz.score;
- $("#quizHint").textContent="Say A, B or C to answer.";
- await speak("Question "+(state.quiz.index+1)+". "+q.q+". Option A: "+q.c[0]+". Option B: "+q.c[1]+". Option C: "+q.c[2]+". Say A, B or C.");
- quizListenAgain();
+ $("#quizHint").textContent="Tap A, B or C to answer. You do not need the microphone.";
+ renderQuizChoices();
 }
 async function handleQuizUtterance(heard){
  if(!state.quiz.active)return;
@@ -168,22 +199,10 @@ async function handleQuizUtterance(heard){
   await askQuizQuestion();return;
  }
  if(state.quiz.phase==="answer"){
-  const letterMatch=answer.match(/(?:^|\s)([abc])(?:$|\s)/);
-  const wordMatch=answer.match(/\b(ay|a|bee|be|b|see|sea|c)\b/);
+  const letterMatch=answer.match(/(?:^|\\s)([abc])(?:$|\\s)/);
+  const wordMatch=answer.match(/\\b(ay|a|bee|be|b|see|sea|c)\\b/);
   const spoken=letterMatch?letterMatch[1]:(wordMatch?({ay:"a",bee:"b",be:"b",see:"c",sea:"c"}[wordMatch[1]]||wordMatch[1]):"");
-  if(!["a","b","c"].includes(spoken)){
-   $("#quizHint").textContent="I didn't catch that. Please say A, B or C.";
-   await speak("Please answer by saying A, B or C.");
-   quizListenAgain();return;
-  }
-  const q=state.quiz.questions[state.quiz.index],selected=spoken.toUpperCase(),correct=selected===q.a;
-  if(correct)state.quiz.score++;
-  $("#quizHint").textContent=correct?"Correct!":"The correct answer was "+q.a+". "+q.c[q.a.charCodeAt(0)-65]+".";
-  $("#quizScore").textContent="Score: "+state.quiz.score;
-  state.quiz.index++;
-  const feedback=correct?"That's correct!": "Not quite. The correct answer was "+q.a+". "+q.c[q.a.charCodeAt(0)-65]+".";
-  if(state.quiz.index>=state.quiz.questions.length){await speak(feedback);await finishAudioQuiz();}
-  else{await speak(feedback);await askQuizQuestion();}
+  if(["a","b","c"].includes(spoken))await quizSelectAnswer(spoken.toUpperCase());
  }
 }
 async function finishAudioQuiz(){
