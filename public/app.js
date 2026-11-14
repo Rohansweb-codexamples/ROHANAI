@@ -6,12 +6,24 @@ function go(page){state.page=page;$$(".page").forEach(p=>p.classList.toggle("act
 $$("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 $("#quickSettings").onclick=()=>go("settings");
 function addMessage(text,who="assistant"){const row=document.createElement("div");row.className="message "+(who==="user"?"user-message":"assistant-message");if(who==="assistant"){const a=document.createElement("span");a.className="message-avatar";a.textContent="R";row.append(a);}const p=document.createElement("p");p.textContent=text;row.append(p);$("#conversation").append(row);$("#conversation").scrollTop=$("#conversation").scrollHeight;}
-function setMood(mood,label){$("#orbWrap").classList.remove("listening","speaking");if(mood)$("#orbWrap").classList.add(mood);$("#assistantState").textContent=label;}
+function setMood(mood,label){
+  $("#orbWrap").classList.remove("listening","speaking");
+  if(mood)$("#orbWrap").classList.add(mood);
+  $("#assistantState").textContent=label;
+  const title=$("#voiceScreenTitle"), detail=$("#voiceScreenText"), panel=$("#voiceScreen");
+  if(title&&detail&&panel){
+    panel.classList.toggle("is-active",mood==="listening"||mood==="speaking");
+    if(mood==="listening"){title.textContent=state.wake?"Listening for Hey Rohan":"I'm listening";detail.textContent="Speak clearly. I'm waiting for your request.";}
+    else if(mood==="speaking"){title.textContent="Rohan AI is speaking";detail.textContent="Playing your reply with Cartesia voice.";}
+    else if(label.includes("UNAVAILABLE")||label.includes("NOT READY")){title.textContent="Voice needs attention";detail.textContent=$("#voiceNote")?.textContent||"Check the Cartesia connection.";}
+    else {title.textContent="Your assistant is ready";detail.textContent="Press the large button to allow microphone access and speak.";}
+  }
+}
 function resumeWakeListening(){if(!state.wake||state.listening)return;state.listening=true;try{state.recognition?.start();$("#listenLabel").textContent="Listening for Hey Rohan";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROHAN");}catch{}}
 async function speak(text){
   if(!state.speak){if(state.wake)setTimeout(resumeWakeListening,500);return;}
   const finish=()=>{setMood("","READY WHEN YOU ARE");if(state.wake)setTimeout(resumeWakeListening,700);};
-  if(!state.voiceId){$("#voiceNote").textContent="Your Cartesia voice has not loaded. Check the Cartesia connection and press Refresh.";setMood("","CARTESIA VOICE NOT READY");finish();return;}
+  if(!state.voiceId){$("#voiceNote").textContent="Cartesia voice is not connected. Replace the API key in Render, redeploy, then refresh this page.";setMood("","CARTESIA VOICE NOT READY");$("#voiceScreenTitle").textContent="Cartesia voice is not connected";$("#voiceScreenText").textContent=$("#voiceNote").textContent;finish();return;}
   try{
     const response=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voiceId:state.voiceId,speed:state.speed})});
     if(!response.ok)throw new Error((await response.json().catch(()=>({}))).error||"Cartesia speech failed");
@@ -26,10 +38,63 @@ async function speak(text){
 function reply(text){addMessage(text);$("#orbHeading").textContent="I'm on it.";$("#orbSubtitle").textContent=text.length>65?text.slice(0,65)+"…":text;speak(text);}
 function handleCommand(raw){const text=raw.trim();if(!text)return;addMessage(text,"user");const t=text.toLowerCase().replace(/[.!?]/g,"");if(/^(hey )?rohan[, ]*/.test(t)){}if(/(hello|hi rohan|hey rohan|good morning)/.test(t)){reply("Hello! Lovely to hear from you. What would you like to do?");return;}if(/(what can you do|help|commands)/.test(t)){reply("I can open games, play my original music soundscapes, tell you the time and date, change settings, and speak using your chosen Cartesia voice. Try saying, open games, play music, or what time is it.");return;}if(/(time is it|current time)/.test(t)){reply("It's "+new Date().toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+".");return;}if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}if(/(open|go to|show).*(music|song|player)/.test(t)||/play (some )?music|play (orange horizon|sunny side up|galaxy drift)/.test(t)){go("music");if(t.includes("sunny"))selectTrack("upbeat");else if(t.includes("galaxy"))selectTrack("space");else if(t.includes("orange"))selectTrack("focus");startMusic();reply("Music time! I've opened the music player. Your soundscape is ready.");return;}if(/(pause|stop) music/.test(t)){stopMusic();reply("Music paused.");return;}if(/(next|skip) (track|song)/.test(t)){cycleTrack(1);reply("Here's the next soundscape.");return;}if(/(voice|change how you sound|voice settings)/.test(t)){go("voice");reply("Let's choose how I sound. Open the voice list to pick a Cartesia voice.");return;}if(/(settings|wake word|microphone)/.test(t)){go("settings");reply("I've opened your settings.");return;}if(/(volume up|louder)/.test(t)){state.assistantVolume=Math.min(100,state.assistantVolume+10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume up.");return;}if(/(volume down|quieter)/.test(t)){state.assistantVolume=Math.max(0,state.assistantVolume-10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume down.");return;}if(/(new game|restart game)/.test(t)){go("games");resetGame();reply("A fresh board! You're X. Your move.");return;}const move=t.match(/(?:move|put|place) (?:an? )?([1-9])|square ([1-9])/);if(move){const n=Number(move[1]||move[2])-1;if(state.page==="games"&&playMove(n)){reply("Move made.");}else reply("I couldn't make that move. Open games and choose an empty square.");return;}reply("I'm still learning that one. Try asking me to open games, play music, tell you the time, or open settings.");}
 function submitCommand(){const input=$("#commandInput"),v=input.value;input.value="";handleCommand(v);}$("#sendCommand").onclick=submitCommand;$("#commandInput").addEventListener("keydown",e=>{if(e.key==="Enter")submitCommand();});$$("[data-command]").forEach(b=>b.addEventListener("click",()=>handleCommand(b.dataset.command)));
-function speechRecognition(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;const rec=new SR();rec.lang="en-GB";rec.continuous=true;rec.interimResults=false;rec.maxAlternatives=3;rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const heard=e.results[i][0].transcript.trim();if(!heard)continue;if(state.wake){const match=heard.match(/\bhey[ ,]+(?:rohan|rowan)\b[,.! ]*(.*)$/i);if(match){const command=(match[1]||"").trim();state.listening=false;try{rec.stop();}catch{}$("#orbHeading").textContent="Yes, Rohan?";$("#orbSubtitle").textContent=command?"I'm listening to your request.":"What can I do for you?";if(command)handleCommand(command);else reply("Yes, Rohan? I'm listening.");}}else{stopRecognition();handleCommand(heard);}}};rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){state.listening=false;state.wake=false;$("#orbSubtitle").textContent="Microphone access is blocked. Allow it in Chrome site settings and switch wake word on again.";$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="Tap to talk";}else if(e.error!=="no-speech"&&e.error!=="aborted")$("#orbSubtitle").textContent="Speech recognition: "+e.error;};rec.onend=()=>{if(state.listening){clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.listening){try{rec.start();}catch{}}},600);}};return rec;}
-async function startRecognition(wake=false){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$("#orbSubtitle").textContent="Speech recognition needs Chrome or Edge. You can still use the text box and spoken replies.";return;}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(track=>track.stop());}catch(error){$("#orbSubtitle").textContent="Microphone permission is needed. Click the site icon beside the address bar and allow Microphone.";return;}if(!state.recognition)state.recognition=speechRecognition();state.wake=wake;state.listening=true;$("#listenLabel").textContent=wake?"Listening for Hey Rohan":"Listening…";$("#listenButton").classList.add("listening");setMood("listening",wake?"ALWAYS LISTENING FOR HEY ROHAN":"I'M LISTENING");try{state.recognition.start();}catch(error){if(error.name!=="InvalidStateError")$("#orbSubtitle").textContent="Could not start the microphone. Refresh the page and try again.";}}
-function stopRecognition(){state.listening=false;state.wake=false;clearTimeout(state.restartTimer);if(state.recognition){try{state.recognition.stop();}catch{}}$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="Tap to talk";setMood("","READY WHEN YOU ARE");}
-$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();return;}startRecognition(false);};
+function speechRecognition(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;const rec=new SR();rec.lang="en-GB";rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=3;rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const heard=e.results[i][0].transcript.trim();if(!heard)continue;if(state.wake){const match=heard.match(/\bhey[ ,]+(?:rohan|rowan)\b[,.! ]*(.*)$/i);if(match){const command=(match[1]||"").trim();state.listening=false;try{rec.stop();}catch{}$("#orbHeading").textContent="Yes, Rohan?";$("#orbSubtitle").textContent=command?"I'm listening to your request.":"What can I do for you?";if(command)handleCommand(command);else reply("Yes, Rohan? I'm listening.");}}else{stopRecognition();handleCommand(heard);}}};rec.onerror=e=>{
+  if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+    state.listening=false;state.wake=false;$("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome, then try again.";
+    $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
+    setMood("","MICROPHONE PERMISSION NEEDED");
+    $("#voiceScreenTitle").textContent="Microphone permission needed";
+    $("#voiceScreenText").textContent="Select the site icon beside the address bar, allow Microphone, and press Start Talking again.";
+  } else if(e.error==="network"){
+    $("#orbSubtitle").textContent="Speech recognition could not reach the browser's recognition service. Check your internet connection and try again.";
+  } else if(e.error!=="no-speech"&&e.error!=="aborted") $("#orbSubtitle").textContent="Microphone issue: "+e.error+". Try again.";
+};
+rec.onend=()=>{
+  if(state.listening&&state.wake){
+    clearTimeout(state.restartTimer);
+    state.restartTimer=setTimeout(()=>{if(state.listening&&state.wake){try{rec.start();}catch{}}},700);
+  } else if(state.listening){
+    state.listening=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
+    setMood("","READY WHEN YOU ARE");
+    $("#voiceScreenTitle").textContent="I didn't catch that";
+    $("#voiceScreenText").textContent="Press Start Talking and try speaking a little closer to your microphone.";
+  }
+};
+return rec;}
+async function startRecognition(wake=false){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    $("#orbSubtitle").textContent="Live speech recognition is not available in this browser. Open Rohan AI in the latest Chrome or Edge, or use the message box.";
+    $("#voiceScreenTitle").textContent="Speech recognition unavailable";
+    $("#voiceScreenText").textContent="Use Chrome or Edge for microphone voice activation. Text commands remain available.";
+    return;
+  }
+  if(!navigator.mediaDevices?.getUserMedia){
+    $("#orbSubtitle").textContent="Microphone access needs a secure HTTPS connection. Open the HTTPS version of Rohan AI.";
+    return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(track=>track.stop());
+  }catch(error){
+    const msg=error.name==="NotAllowedError"?"Microphone permission was denied. Allow it using the site icon beside the address bar.":"The microphone could not be opened: "+error.message;
+    $("#orbSubtitle").textContent=msg;$("#voiceScreenTitle").textContent="Microphone unavailable";$("#voiceScreenText").textContent=msg;
+    return;
+  }
+  if(!state.recognition)state.recognition=speechRecognition();
+  state.wake=wake;state.recognition.continuous=wake;state.listening=true;
+  $("#listenLabel").textContent=wake?"LISTENING FOR HEY ROHAN":"LISTENING…";
+  $("#listenButton").classList.add("listening");
+  setMood("listening",wake?"ALWAYS LISTENING FOR HEY ROHAN":"I'M LISTENING");
+  $("#orbSubtitle").textContent=wake?"Say “Hey Rohan” followed by your request.":"Go ahead — I'm listening.";
+  try{state.recognition.start();}
+  catch(error){
+    state.listening=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
+    if(error.name!=="InvalidStateError"){$("#orbSubtitle").textContent="Could not start speech recognition: "+error.message;setMood("","MICROPHONE START FAILED");}
+  }
+}
+function stopRecognition(){state.listening=false;state.wake=false;clearTimeout(state.restartTimer);if(state.recognition){try{state.recognition.stop();}catch{}}$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";setMood("","READY WHEN YOU ARE");}
+$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Listening stopped";$("#voiceScreenText").textContent="Press Start Talking whenever you are ready.";return;}startRecognition(false);};
 function syncSettings(){$("#wakeToggle").checked=state.wake;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");}
 $("#wakeToggle").onchange=e=>{if(e.target.checked){startRecognition(true);}else{stopRecognition();$("#orbSubtitle").textContent="Wake word mode is off.";}};
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
@@ -37,7 +102,20 @@ $("#themeToggle").onchange=e=>document.body.classList.toggle("no-glow",!e.target
 $("#assistantVolume").oninput=e=>{state.assistantVolume=Number(e.target.value);$("#assistantVolumeValue").textContent=state.assistantVolume+"%";if(state.audio)state.audio.volume=state.assistantVolume/100;localStorage.setItem("rohanVolume",state.assistantVolume);};
 $("#testMic").onclick=()=>startRecognition(false);
 $("#speechSpeed").value=state.speed;$("#speechSpeed").oninput=e=>{state.speed=Number(e.target.value);$("#speedValue").textContent=state.speed.toFixed(1)+"×";localStorage.setItem("rohanSpeed",state.speed);};
-async function loadStatus(){try{const r=await fetch("/api/status"),d=await r.json();$("#statusDot").classList.toggle("online",d.speechConfigured);$("#connectionText").textContent=d.speechConfigured?"Cartesia connected":"Cartesia key needed";$("#keyStatus").textContent=d.speechConfigured?"Configured on server":"Not configured";}catch{$("#connectionText").textContent="Server unavailable";$("#keyStatus").textContent="Server unavailable";}}
+async function loadStatus(){
+  try{
+    const r=await fetch("/api/status",{cache:"no-store"}),d=await r.json();
+    const ready=d.speechConfigured&&d.keyFormatValid;
+    $("#statusDot").classList.toggle("online",ready);
+    $("#connectionText").textContent=ready?"Cartesia key detected":d.speechConfigured?"Cartesia key needs replacing":"Cartesia key needed";
+    $("#keyStatus").textContent=ready?"Key format detected":d.speechConfigured?"Replace key in Render":"Not configured";
+    if(!ready){
+      $("#voiceNote").textContent=d.speechConfigured?"Render has a key, but it does not look like a current Cartesia API key. Replace CARTESIA_API_KEY with a key beginning sk_car_.":"Add CARTESIA_API_KEY to the Render service environment.";
+      $("#voiceScreenTitle").textContent="Cartesia voice is not connected";
+      $("#voiceScreenText").textContent="The microphone can listen, but spoken replies need a valid Cartesia API key on the server.";
+    }
+  }catch{$("#connectionText").textContent="Server unavailable";$("#keyStatus").textContent="Server unavailable";}
+}
 async function loadVoices(){
   const list=$("#voiceList");list.innerHTML='<div class="loading-line">Connecting to Cartesia…</div>';
   $("#voiceNote").textContent="Loading your single Cartesia voice…";
@@ -51,7 +129,9 @@ async function loadVoices(){
   }catch(e){
     state.voices=[];state.voiceId="";localStorage.removeItem("rohanVoiceId");list.innerHTML="";
     const p=document.createElement("div");p.className="loading-line";p.textContent="Could not load the Cartesia voice: "+e.message;list.append(p);
-    $("#voiceNote").textContent="Cartesia must connect before spoken replies can work. No browser voice will be used.";
+    $("#voiceNote").textContent=e.message.includes("401")?"Cartesia rejected the server API key. In Render, replace CARTESIA_API_KEY with a fresh key beginning sk_car_, save, and redeploy. No browser voice fallback is enabled.":"Cartesia must connect before spoken replies can work. No browser voice fallback is enabled.";
+    $("#voiceScreenTitle").textContent="Cartesia voice connection failed";
+    $("#voiceScreenText").textContent=$("#voiceNote").textContent;
   }
 }
 function renderVoices(){
