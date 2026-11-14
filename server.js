@@ -33,45 +33,33 @@ app.get("/api/status", (_req, res) => {
 
 app.get("/api/voices", async (_req, res) => {
   if (!CARTESIA_API_KEY) return res.status(503).json({ error: "Cartesia is not configured. Add CARTESIA_API_KEY to your hosting environment." });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const voices = [];
-    let cursor = "";
-    let pages = 0;
-    do {
-      const params = new URLSearchParams({ limit: "100" });
-      if (cursor) params.set("starting_after", cursor);
-      const upstream = await fetch(`https://api.cartesia.ai/voices?${params.toString()}`, {
-        headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION }
-      });
-      const data = await upstream.json().catch(() => ({}));
-      if (!upstream.ok) {
-        console.error("Cartesia voices error:", upstream.status, JSON.stringify(data).slice(0, 500));
-        if (upstream.status === 401) return res.status(401).json({ error: "Cartesia rejected the API key (401). In Render, replace CARTESIA_API_KEY with a current API key, then redeploy." });
-        const detail = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
-        return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
-      }
-      let page = Array.isArray(data) ? data : data.data ?? data.voices ?? data.items ?? data.voice ?? [];
-      if (!Array.isArray(page)) page = page && typeof page === "object" ? [page] : [];
-      const valid = page.filter(v => v && typeof v.id === "string" && v.id.trim());
-      voices.push(...valid);
-      pages++;
-      const hasMore = Boolean(data.has_more);
-      const nextCursor = typeof data.next_page === "string" && data.next_page
-        ? data.next_page
-        : (valid.length ? valid[valid.length - 1].id : "");
-      if (!hasMore || !nextCursor || nextCursor === cursor || pages >= 10) break;
-      cursor = nextCursor;
-    } while (true);
-
-    const unique = [...new Map(voices.map(v => [v.id, {
-      id: v.id,
-      name: v.name || v.description || v.tagline || "Cartesia voice"
-    }])).values()];
-    if (!unique.length) return res.status(502).json({ error: "Cartesia connected, but returned no usable voices. Check that your API key has access to the Voice Library." });
-    res.json({ voices: unique, voice: unique[0], count: unique.length });
+    const params = new URLSearchParams({ limit: "1" });
+    const upstream = await fetch(`https://api.cartesia.ai/voices?${params.toString()}`, {
+      headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION },
+      signal: controller.signal
+    });
+    const data = await upstream.json().catch(() => ({}));
+    if (!upstream.ok) {
+      console.error("Cartesia voices error:", upstream.status, JSON.stringify(data).slice(0, 500));
+      if (upstream.status === 401) return res.status(401).json({ error: "Cartesia rejected the API key (401). Check CARTESIA_API_KEY in Render." });
+      const detail = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
+      return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
+    }
+    const item = Array.isArray(data) ? data[0] : Array.isArray(data.data) ? data.data[0] : Array.isArray(data.voices) ? data.voices[0] : data.voice;
+    if (!item || typeof item.id !== "string" || !item.id.trim()) {
+      return res.status(502).json({ error: "Cartesia connected but did not return a voice. Check that your account has at least one available voice." });
+    }
+    const voice = { id: item.id, name: item.name || item.description || item.tagline || "Cartesia voice" };
+    return res.json({ voices: [voice], voice, count: 1 });
   } catch (error) {
-    console.error("Cartesia voices error:", error.message);
-    res.status(502).json({ error: "Could not connect to Cartesia voice service." });
+    console.error("Cartesia voices error:", error.name, error.message);
+    const message = error.name === "AbortError" ? "Cartesia took too long to respond. Press Refresh to try again." : "Could not connect to Cartesia voice service.";
+    return res.status(502).json({ error: message });
+  } finally {
+    clearTimeout(timeout);
   }
 });
 
