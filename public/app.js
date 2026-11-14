@@ -142,7 +142,7 @@ async function quizSelectAnswer(letter){
  else askQuizQuestion();
 }
 function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";renderQuizChoices();}
-$("#startAudioQuiz").addEventListener("click",()=>{if(state.quiz.active){stopRecognition();startRecognition(false);}else startAudioQuiz();});
+$("#startAudioQuiz").addEventListener("click",startAudioQuiz);
 $("#stopAudioQuiz").addEventListener("click",stopAudioQuiz);
 async function quizListenAgain(){
  if(!state.quiz.active)return;
