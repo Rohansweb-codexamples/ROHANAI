@@ -59,6 +59,9 @@ function handleCommand(raw){
   const t=text.toLowerCase().replace(/[.!?]/g,"").trim();
   addMessage(text,"user");
   if(state.speaking){
+    if(/\b(stop|pause) music\b/.test(t)){
+      stopMusic();cancelSpeech(t.includes("stop")?"stop":"pause");addMessage("Music and speech paused.");return;
+    }
     if(/^(pause|wait|hold on)( please)?$|^(stop|quiet|be quiet)( speaking| talking| the story)?$|\b(stop|pause) (speaking|talking|the story|story)\b/.test(t)){
       cancelSpeech(t.startsWith("stop")||t.includes("stop ")?"stop":"pause");
       addMessage(t.startsWith("stop")?"Okay, I've stopped speaking.":"Okay, I've paused. Say resume when you're ready.");
@@ -84,7 +87,7 @@ function handleCommand(raw){
     if(state.audio){state.audio.play().then(()=>{state.speaking=true;setMood("speaking","ROHAN IS SPEAKING");}).catch(()=>{});return;}
     startMusic();return;
   }
-  if(/(tell me|read me|make up|start|want) (a )?(short )?(bedtime )?(story|tale)|\bstory time\b|\bfairy tale\b/.test(t)||t==="story"){
+  if(/(tell me|tell a|read me|make up|start|want) (a )?(short )?(bedtime |children's |kids' |young )?(story|tale)|\bstory time\b|\bfairy tale\b|\btell (me )?(a )?(kids|children's|young) story\b/.test(t)||t==="story"){
     tellStory();return;
   }
   if(/(hello|hi rohan|hey rohan|good morning)/.test(t)){reply("Hello! Lovely to hear from you. What would you like to do?");return;}
