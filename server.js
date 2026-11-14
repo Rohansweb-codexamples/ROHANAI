@@ -34,24 +34,41 @@ app.get("/api/status", (_req, res) => {
 app.get("/api/voices", async (_req, res) => {
   if (!CARTESIA_API_KEY) return res.status(503).json({ error: "Cartesia is not configured. Add CARTESIA_API_KEY to your hosting environment." });
   try {
-    const upstream = await fetch("https://api.cartesia.ai/voices", {
-      headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION }
-    });
-    const data = await upstream.json().catch(() => ({}));
-    if (!upstream.ok) {
-      console.error("Cartesia voices error:", upstream.status, JSON.stringify(data).slice(0, 500));
-      if (upstream.status === 401) {
-        return res.status(401).json({
-          error: "Cartesia rejected the API key (401). In Render, replace CARTESIA_API_KEY with a current Cartesia API key beginning sk_car_, then redeploy."
-        });
+    const voices = [];
+    let cursor = "";
+    let pages = 0;
+    do {
+      const params = new URLSearchParams({ limit: "100" });
+      if (cursor) params.set("starting_after", cursor);
+      const upstream = await fetch(`https://api.cartesia.ai/voices?${params.toString()}`, {
+        headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION }
+      });
+      const data = await upstream.json().catch(() => ({}));
+      if (!upstream.ok) {
+        console.error("Cartesia voices error:", upstream.status, JSON.stringify(data).slice(0, 500));
+        if (upstream.status === 401) return res.status(401).json({ error: "Cartesia rejected the API key (401). In Render, replace CARTESIA_API_KEY with a current API key, then redeploy." });
+        const detail = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
+        return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
       }
-      const detail = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : "";
-      return res.status(upstream.status).json({ error: detail || `Cartesia voice request failed (HTTP ${upstream.status}).` });
-    }
-    const source = Array.isArray(data) ? data : (data.data || data.voices || data.items || []);
-    const voices = source.filter(v => v && v.id).slice(0, 50).map(v => ({ id: v.id, name: v.name || v.description || "Cartesia voice" }));
-    if (!voices.length) return res.status(502).json({ error: "Cartesia returned no available voices for this API key." });
-    res.json({ voices, voice: voices[0] });
+      let page = Array.isArray(data) ? data : data.data ?? data.voices ?? data.items ?? data.voice ?? [];
+      if (!Array.isArray(page)) page = page && typeof page === "object" ? [page] : [];
+      const valid = page.filter(v => v && typeof v.id === "string" && v.id.trim());
+      voices.push(...valid);
+      pages++;
+      const hasMore = Boolean(data.has_more);
+      const nextCursor = typeof data.next_page === "string" && data.next_page
+        ? data.next_page
+        : (valid.length ? valid[valid.length - 1].id : "");
+      if (!hasMore || !nextCursor || nextCursor === cursor || pages >= 10) break;
+      cursor = nextCursor;
+    } while (true);
+
+    const unique = [...new Map(voices.map(v => [v.id, {
+      id: v.id,
+      name: v.name || v.description || v.tagline || "Cartesia voice"
+    }])).values()];
+    if (!unique.length) return res.status(502).json({ error: "Cartesia connected, but returned no usable voices. Check that your API key has access to the Voice Library." });
+    res.json({ voices: unique, voice: unique[0], count: unique.length });
   } catch (error) {
     console.error("Cartesia voices error:", error.message);
     res.status(502).json({ error: "Could not connect to Cartesia voice service." });
