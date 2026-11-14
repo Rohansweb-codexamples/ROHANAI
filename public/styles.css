@@ -357,3 +357,6 @@ body.spark-handsfree .top-actions .clock{display:block}
 /* Enforce voice-only use once Spark setup has granted microphone access. */
 body.spark-handsfree button,body.spark-handsfree a,body.spark-handsfree input,body.spark-handsfree select{display:none!important;pointer-events:none!important}
 body.spark-handsfree .board button{display:grid!important;pointer-events:none!important}
+
+/* Keep the first-run setup usable when the browser needs a fresh microphone gesture after reload. */
+#welcomeSetup{z-index:10020}body.spark-handsfree #welcomeSetup button,body.spark-handsfree #welcomeSetup select{display:flex!important;pointer-events:auto!important}
