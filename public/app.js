@@ -360,6 +360,7 @@ function setAccent(accent){const v=["blue","orange","green","pink"].includes(acc
 $(".accent-choice").forEach(b=>b.onclick=()=>setAccent(b.dataset.accent));
 $("#welcomeVoiceSelect").onchange=e=>chooseVoice(e.target.value);
 $("#previewWelcomeVoice").onclick=()=>{if(!state.voiceId){$("#welcomeVoiceStatus").textContent="No Cartesia voice is available yet.";return;}speak("Hello! This is a preview of the voice you selected for Rohan AI.");};
+$("#retryWelcomeVoice").onclick=loadVoices;
 $("#finishSetup").onclick=()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");$("#orbSubtitle").textContent="All set. Press Start Listening whenever you want to talk.";reply("You're all set! I've saved your voice and colour choices. What would you like to do?");};
 function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanSetupComplete")!=="true")$("#welcomeSetup").classList.remove("hidden");}
 
