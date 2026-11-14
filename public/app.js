@@ -1,7 +1,12 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
 const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, recognition:null, listening:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85) };
-const tracks=[{id:"library",name:"Your music",desc:"Your MP3 from Rohan AI",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3"}];
+const tracks=[
+ {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
+ {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
+ {id:"soundhelix2",name:"SoundHelix Two",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",art:"music_note"},
+ {id:"soundhelix3",name:"SoundHelix Three",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",art:"graphic_eq"}
+];
 function go(page){state.page=page;$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const titles={home:"Good morning, Rohan",games:"Let's play a game",music:"Your music space",voice:"Voice studio",settings:"Settings"};$("#pageTitle").textContent=titles[page]||"Rohan AI";if(page==="voice"&&!state.voices.length)loadVoices();if(page==="games")renderBoard();if(page==="settings")syncSettings();window.scrollTo({top:0,behavior:"smooth"});}
 $$("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 $("#quickSettings").onclick=()=>go("settings");
@@ -211,25 +216,51 @@ function bestMove(b){let best=-Infinity,choice=-1;for(let i=0;i<9;i++){if(b[i])c
 function minimax(b,depth,isMax){if(winner(b,"O"))return 10-depth;if(winner(b,"X"))return depth-10;if(b.every(Boolean))return 0;if(isMax){let v=-Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="O";v=Math.max(v,minimax(b,depth+1,false));b[i]="";}return v;}let v=Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="X";v=Math.min(v,minimax(b,depth+1,true));b[i]="";}return v;}
 function finishGame(result){state.gameOver=true;state.scores[result]++;const messages={you:"You won! Brilliant move, Rohan!",ai:"I won this round! Fancy another?",draw:"It's a draw! Good game."};$("#gameStatus").textContent=messages[result];renderBoard();}
 function resetGame(){state.board=Array(9).fill("");state.gameOver=false;$("#gameStatus").textContent="Your turn — X";renderBoard();}$("#resetGame").onclick=resetGame;renderBoard();
-function selectTrack(){state.track="library";$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track==="library"));$("#nowPlaying").textContent="Your music";$("#trackDescription").textContent="Your MP3 from Rohan AI";$("#playerArt").textContent="graphic_eq";$("#playerArt").className="player-art material-symbols-rounded art-library";}
-$(".track-card").forEach(b=>b.onclick=()=>{selectTrack();if(!state.musicOn)startMusic();});
+function selectTrack(id="library",autoplay=false){
+ const track=tracks.find(item=>item.id===id)||tracks[0];
+ const changed=state.track!==track.id;
+ if(changed){stopMusic();state.track=track.id;musicElement.src=track.src;musicElement.load();}
+ $$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track===track.id));
+ $("#nowPlaying").textContent=track.name;
+ $("#trackDescription").textContent=track.desc;
+ $("#playerArt").textContent=track.art;
+ $("#musicStatus").textContent="Ready to play";
+ $("#duration").textContent="--:--";
+ $("#elapsed").textContent="00:00";
+ $("#musicProgress").style.width="0%";
+ if(autoplay)startMusic();
+}
 const musicElement=$("#musicAudio");
+musicElement.src=tracks[0].src;
 musicElement.addEventListener("loadedmetadata",()=>{$("#duration").textContent=formatMusicTime(musicElement.duration);});
-musicElement.addEventListener("error",()=>{$("#trackDescription").textContent="Unable to load the MP3. Open the music link directly to check it is available.";state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});
-musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});
+musicElement.addEventListener("canplay",()=>{if(!state.musicOn)$("#musicStatus").textContent="Ready to play";});
+musicElement.addEventListener("waiting",()=>{$("#musicStatus").textContent="Buffering audio…";});
+musicElement.addEventListener("error",()=>{
+ state.musicOn=false;
+ const code=musicElement.error?.code;
+ const reason=code===2?"Network error while downloading the audio.":code===3?"The audio format could not be decoded.":code===4?"This audio source is unavailable.":"The audio could not be loaded.";
+ $("#trackDescription").textContent=reason;
+ $("#musicStatus").textContent=reason+" Choose another track.";
+ $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
+});
+musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#musicStatus").textContent="Track finished";});
 function startMusic(){
- state.musicAudio=musicElement;
+ if(!musicElement.src)selectTrack(state.track||"library",false);
  musicElement.loop=true;
  musicElement.volume=Number($("#musicVolume").value)/100;
- if(musicElement.readyState===0)musicElement.load();
+ $("#musicStatus").textContent="Loading track…";
  musicElement.play().then(()=>{
    state.musicOn=true;
-   $("#trackDescription").textContent="Playing your MP3";
+   $("#trackDescription").textContent=tracks.find(t=>t.id===state.track)?.desc||"Streaming audio";
+   $("#musicStatus").textContent="Now playing";
    $("#playMusic").innerHTML='<span class="material-symbols-rounded">pause</span>';
+   if(state.progressTimer)cancelAnimationFrame(state.progressTimer);
    progressMusic();
  }).catch(error=>{
    state.musicOn=false;
-   $("#trackDescription").textContent=error&&error.name==="NotAllowedError"?"Press play to allow music.":"Could not play the MP3. Check the file address and try again.";
+   const message=error?.name==="NotAllowedError"?"Your browser blocked playback. Press Play again.":"This source did not start. Try one of the SoundHelix tracks.";
+   $("#musicStatus").textContent=message;
+   $("#trackDescription").textContent=message;
    $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
  });
 }
@@ -248,6 +279,7 @@ function stopMusic(){
  if(state.progressTimer)cancelAnimationFrame(state.progressTimer);
  $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
 }
+$$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
 $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
