@@ -193,3 +193,5 @@ html,body{height:auto;min-height:100%;overflow-x:hidden!important;overflow-y:aut
   .setting-row{gap:12px}
   .player-card{width:100%;min-width:0}
 }
+
+.manual-mode-pill{display:inline-flex;align-items:center;justify-content:center;padding:8px 13px;border:1px solid rgba(93,203,255,.32);border-radius:999px;background:rgba(55,157,255,.12);color:#8cdeff;font-size:11px;font-weight:800;letter-spacing:1px;white-space:nowrap}
