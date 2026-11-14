@@ -80,5 +80,5 @@ app.post("/api/tts", async (req, res) => {
   }
 });
 
-app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.use((_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 app.listen(PORT, () => console.log(`Rohan AI listening on port ${PORT}`));
