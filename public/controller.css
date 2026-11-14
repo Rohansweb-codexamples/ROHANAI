@@ -28,3 +28,13 @@
 }
 .code-entry{margin:18px 0 8px}.code-entry label{display:block;color:#ffb06b;font-size:9px;font-weight:800;letter-spacing:1.5px;margin-bottom:9px}.code-entry>div{display:flex;gap:8px}.code-entry input{min-width:0;flex:1;background:#091324;border:1px solid #455b7a;border-radius:13px;padding:15px;color:white;font:700 23px "Space Grotesk";letter-spacing:6px;text-align:center}.code-entry button{border:0;border-radius:13px;background:linear-gradient(100deg,#ffad58,#f16b32);color:#211621;padding:0 18px;font-weight:900;font-size:11px}.code-entry p{font-size:10px;color:#9aabc4;min-height:15px}
 .device-list{display:grid;gap:10px;margin-top:17px}.device-empty{padding:18px 14px;border:1px dashed #45516a;border-radius:14px;color:#9aabc4;font-size:12px;line-height:1.6;text-align:center}.device-item{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #344763;border-radius:15px;background:#0b1424}.device-orb{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 30% 25%,#e7fbff,#69d7ff 40%,#387bd9);color:#07162a;font-size:20px;font-weight:900;box-shadow:0 0 20px #5bcaff44}.device-info{flex:1;min-width:0}.device-info strong,.device-info small{display:block}.device-info strong{font:700 14px "Space Grotesk"}.device-info small{font-size:10px;color:#8798b2;margin-top:4px}.device-item button{border:0;border-radius:10px;padding:11px 12px;background:linear-gradient(100deg,#ffad58,#f16b32);color:#211621;font-size:9px;font-weight:900}.device-item button:disabled{background:#26354a;color:#9aabc4;opacity:1}
+
+:root{--accent:#ff9b4a;--accent2:#f16b32}
+.settings-link{color:var(--accent);text-decoration:none;font-size:9px;font-weight:900;letter-spacing:1px;border:1px solid #3a4962;padding:9px 11px;border-radius:10px}
+.brand b,.eyebrow,.intro h1 em,.live-tag,.volume-head strong,.speaker-link{color:var(--accent)}
+.brand-icon,.album,.transport .play-button,.wide-button,.code-entry button,.device-item button{background:linear-gradient(140deg,var(--accent),var(--accent2))}
+.progress span{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.upload-music{margin-top:18px;padding:13px;border:1px dashed #465875;border-radius:13px;background:#0b1424}
+.upload-music label{display:block;color:var(--accent);font-size:9px;font-weight:900;letter-spacing:1.5px;margin-bottom:9px}
+.upload-music input{width:100%;color:#c8d4e6;font-size:11px}
+.upload-music small{display:block;color:#8798b2;font-size:10px;margin-top:8px;line-height:1.5}
