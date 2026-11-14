@@ -615,8 +615,9 @@ musicElement.addEventListener("error",()=>{
  $("#musicStatus").textContent=reason+" Choose another track.";
  $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniPlay").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniTrackStatus").textContent="Paused";
 });
-musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#musicStatus").textContent="Track finished";});
+musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniPlay").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniTrackStatus").textContent="Track finished";$("#musicStatus").textContent="Track finished";});
 function startMusic(){
+ if(state.wake&&state.listening&&!state.recognitionRunning)scheduleRecognitionRestart(180);
  if(!musicElement.src)selectTrack(state.track||"house",false);
  musicElement.loop=true;
  musicElement.muted=false;
@@ -650,9 +651,9 @@ function stopMusic(){
  state.musicOn=false;
  musicElement.pause();
  if(state.progressTimer)cancelAnimationFrame(state.progressTimer);
- $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
+ $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniPlay").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniTrackStatus").textContent="Paused";
 }
-$$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
+$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
 $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};$("#miniPlay").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
