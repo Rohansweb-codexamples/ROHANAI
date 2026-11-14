@@ -216,6 +216,7 @@ function bestMove(b){let best=-Infinity,choice=-1;for(let i=0;i<9;i++){if(b[i])c
 function minimax(b,depth,isMax){if(winner(b,"O"))return 10-depth;if(winner(b,"X"))return depth-10;if(b.every(Boolean))return 0;if(isMax){let v=-Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="O";v=Math.max(v,minimax(b,depth+1,false));b[i]="";}return v;}let v=Infinity;for(let i=0;i<9;i++)if(!b[i]){b[i]="X";v=Math.min(v,minimax(b,depth+1,true));b[i]="";}return v;}
 function finishGame(result){state.gameOver=true;state.scores[result]++;const messages={you:"You won! Brilliant move, Rohan!",ai:"I won this round! Fancy another?",draw:"It's a draw! Good game."};$("#gameStatus").textContent=messages[result];renderBoard();}
 function resetGame(){state.board=Array(9).fill("");state.gameOver=false;$("#gameStatus").textContent="Your turn — X";renderBoard();}$("#resetGame").onclick=resetGame;renderBoard();
+function cycleTrack(direction=1){const index=tracks.findIndex(track=>track.id===state.track);const next=(index+direction+tracks.length)%tracks.length;selectTrack(tracks[next].id,true);}
 function selectTrack(id="library",autoplay=false){
  const track=tracks.find(item=>item.id===id)||tracks[0];
  const changed=state.track!==track.id;
