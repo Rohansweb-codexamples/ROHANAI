@@ -17,6 +17,7 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false 
 app.use(express.json({ limit: "12kb" }));
 app.use("/api", rateLimit({ windowMs: 60_000, limit: 35, standardHeaders: "draft-8", legacyHeaders: false }));
 app.use(express.static(path.join(__dirname, "public")));
+app.get("/music.mp3", (_req, res) => res.sendFile(path.join(__dirname, "untitled-video-8_otfFPTjE.mp3")));
 
 app.get("/api/status", (_req, res) => {
   const configured = Boolean(CARTESIA_API_KEY);
