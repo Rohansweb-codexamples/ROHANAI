@@ -93,9 +93,10 @@ app.post("/api/device/command", (req, res) => {
   const session = findDeviceByToken(req.body?.token, "controller");
   if (!session) return res.status(401).json({ error: "Controller is not connected. Refresh and pair the speaker again." });
   const command = req.body?.command;
-  const allowed = ["play", "pause", "next", "previous", "volume", "track", "settings"];
+  const allowed = ["play", "pause", "next", "previous", "volume", "track", "settings", "timer"];
   if (!command || !allowed.includes(command.type)) return res.status(400).json({ error: "Unsupported speaker command." });
   if (command.type === "settings" && (!command.value || typeof command.value !== "object" || Array.isArray(command.value) || JSON.stringify(command.value).length > 5000)) return res.status(400).json({ error: "Invalid assistant settings." });
+  if (command.type === "timer" && !((command.action === "cancel") || (command.action === "start" && Number.isFinite(command.duration) && command.duration > 0 && command.duration <= 86400000))) return res.status(400).json({ error: "Choose a timer up to 24 hours, or cancel it." });
   if (command.type === "volume" && (!Number.isFinite(command.value) || command.value < 0 || command.value > 1)) return res.status(400).json({ error: "Volume must be between 0 and 1." });
   if (command.type === "track" && !["House", "SoundHelix One", "SoundHelix Two", "SoundHelix Three"].includes(command.value) && !(typeof command.value === "string" && /^\/api\/music\/file\/[a-f0-9]{24}\.(mp3|wav|ogg|m4a|aac)$/.test(command.value))) return res.status(400).json({ error: "That track is not available." });
   if (command.type === "track" && command.value.startsWith("/api/music/file/") && (typeof command.name !== "string" || !command.name.trim() || command.name.length > 80)) return res.status(400).json({ error: "Give your uploaded track a name." });
@@ -125,7 +126,8 @@ app.post("/api/device/heartbeat", (req, res) => {
     track: typeof input.track === "string" ? input.track.slice(0, 60) : "House",
     currentTime: Number.isFinite(input.currentTime) ? Math.max(0, input.currentTime) : 0,
     duration: Number.isFinite(input.duration) ? Math.max(0, input.duration) : 0,
-    volume: Number.isFinite(input.volume) ? Math.min(1, Math.max(0, input.volume)) : 0.85
+    volume: Number.isFinite(input.volume) ? Math.min(1, Math.max(0, input.volume)) : 0.85,
+    timerEnd: Number.isFinite(input.timerEnd) && input.timerEnd > Date.now() ? input.timerEnd : 0
   };
   saveDeviceSessions();
   res.json({ ok: true });
