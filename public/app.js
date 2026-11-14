@@ -213,6 +213,7 @@ function finishGame(result){state.gameOver=true;state.scores[result]++;const mes
 function resetGame(){state.board=Array(9).fill("");state.gameOver=false;$("#gameStatus").textContent="Your turn — X";renderBoard();}$("#resetGame").onclick=resetGame;renderBoard();
 function selectTrack(id){state.track="library";$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track==="library"));$("#nowPlaying").textContent="Your music";$("#trackDescription").textContent="Your MP3 from Rohan AI";$("#playerArt").textContent="graphic_eq";$("#playerArt").className="player-art material-symbols-rounded art-library";}
 $(".track-card").forEach(b=>b.onclick=()=>{selectTrack("library");if(!state.musicOn)startMusic();});
+function cycleTrack(){if(state.musicAudio){state.musicAudio.currentTime=0;}else{startMusic();}}
 function startMusic(){
  const track=tracks[0];
  if(!state.musicAudio){state.musicAudio=new Audio(track.src);state.musicAudio.preload="auto";state.musicAudio.addEventListener("loadedmetadata",()=>$("#duration").textContent=formatMusicTime(state.musicAudio.duration));state.musicAudio.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';});state.musicAudio.addEventListener("error",()=>{$("#trackDescription").textContent="The MP3 could not be loaded. Check the music link.";state.musicOn=false;});}
