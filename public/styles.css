@@ -146,3 +146,50 @@ html,body{height:auto;min-height:100%;overflow-x:hidden!important;overflow-y:aut
 .voice-list{max-height:360px}
 @media(max-width:900px){.sidebar{height:auto;position:sticky;top:0}.main-area{height:auto;min-height:100vh;overflow:visible}.page{height:auto;min-height:calc(100vh - 100px)}.game-layout{grid-template-columns:1fr}.game-aside{grid-template-columns:1fr 1fr}.right-column{display:grid}.hero-grid{height:auto}.assistant-card{min-height:560px}.player-card{grid-template-columns:70px minmax(0,1fr) auto}}
 @media(max-width:720px){.app-shell{display:block}.sidebar{height:auto}.main-area{padding:20px 14px}.page{min-height:calc(100vh - 100px)}.game-board-card{min-height:0;padding:17px}.board{gap:8px}.cell{border-radius:14px}.score-tile{min-height:160px;padding:18px}.music-library-head{align-items:flex-start}.player-card{grid-template-columns:58px minmax(0,1fr);gap:13px;padding:17px}.player-art{width:58px;height:58px}.player-controls{grid-column:1/-1;grid-row:auto;justify-content:center}.play-main{width:68px;height:68px}.volume-row,.music-status{grid-column:1/-1}}
+
+/* Tablet and touch layouts */
+@media (min-width:721px) and (max-width:1100px){
+  .app-shell{grid-template-columns:82px minmax(0,1fr);max-width:none}
+  .sidebar{width:82px;height:100dvh;padding:20px 8px;position:sticky;top:0;align-items:center}
+  .brand{justify-content:center;margin:0 0 28px}
+  .brand>span:last-child,.side-label{display:none}
+  .nav-list{width:100%;gap:10px}
+  .nav-item{justify-content:center;padding:14px 6px;font-size:0;min-height:58px}
+  .nav-icon{width:auto;font-size:24px}
+  .sidebar-bottom{width:100%}
+  .connection{justify-content:center;padding:12px 0}
+  .connection span:last-child,.profile>div:last-of-type,.profile .more{display:none}
+  .profile{justify-content:center}
+  .main-area{padding:22px 24px;min-width:0}
+  .hero-grid{height:auto;grid-template-columns:minmax(0,1fr);gap:18px}
+  .assistant-card{min-height:620px;padding:28px}
+  .right-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;gap:16px}
+  .welcome-card,.shortcuts-card{min-height:230px}
+  .page{height:auto;min-height:calc(100dvh - 90px)}
+  .game-layout{grid-template-columns:minmax(0,1fr)}
+  .game-aside{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .settings-grid,.voice-layout{height:auto}
+}
+@media(max-width:720px){
+  .app-shell{display:flex;flex-direction:column}
+  .sidebar{position:sticky;top:0;z-index:20;width:100%;height:auto;padding:8px 10px;border-right:0;border-bottom:1px solid var(--line);display:block}
+  .brand,.side-label,.sidebar-bottom{display:none}
+  .nav-list{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;width:100%}
+  .nav-item{min-height:54px;padding:8px 3px;justify-content:center;gap:0;font-size:0;border-radius:12px}
+  .nav-icon{width:auto;font-size:23px}
+  .main-area{width:100%;padding:15px 12px 28px;min-height:calc(100dvh - 70px)}
+  .topbar{gap:8px}
+  .topbar h1{font-size:clamp(19px,5vw,25px)}
+  .assistant-card{min-height:0;padding:20px 14px}
+  .assistant-top{gap:8px;flex-wrap:wrap;justify-content:center}
+  .orb-wrap{transform:scale(.78);margin:0 auto;height:190px}
+  .listen-button{width:100%;min-height:68px}
+  .voice-screen,.conversation{width:100%;max-width:none}
+  .right-column{display:grid;grid-template-columns:1fr;grid-template-rows:auto}
+  .game-aside{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .game-board-card{width:100%;min-width:0}
+  .board{width:min(100%,430px)}
+  .settings-grid,.voice-layout{grid-template-columns:1fr}
+  .setting-row{gap:12px}
+  .player-card{width:100%;min-width:0}
+}
