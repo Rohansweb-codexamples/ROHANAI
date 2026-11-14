@@ -26,7 +26,7 @@ app.get("/api/voices", async (_req, res) => {
   if (!CARTESIA_API_KEY) return res.status(503).json({ error: "Cartesia is not configured. Add CARTESIA_API_KEY to your hosting environment." });
   try {
     const upstream = await fetch("https://api.cartesia.ai/voices", {
-      headers: { "X-API-Key": CARTESIA_API_KEY, "Cartesia-Version": CARTESIA_VERSION }
+      headers: { "Authorization": `Bearer ${CARTESIA_API_KEY}`, "Cartesia-Version": CARTESIA_VERSION }
     });
     const data = await upstream.json();
     if (!upstream.ok) return res.status(upstream.status).json({ error: data.message || data.error || "Cartesia could not load your voice." });
@@ -52,7 +52,7 @@ app.post("/api/tts", async (req, res) => {
     const upstream = await fetch("https://api.cartesia.ai/tts/bytes", {
       method: "POST",
       headers: {
-        "X-API-Key": CARTESIA_API_KEY,
+        "Authorization": `Bearer ${CARTESIA_API_KEY}`,
         "Cartesia-Version": CARTESIA_VERSION,
         "Content-Type": "application/json"
       },
