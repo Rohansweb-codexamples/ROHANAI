@@ -164,7 +164,28 @@ app.get("/api/music/file/:filename", (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
   res.sendFile(path.join(DATA_DIR, "music", filename), error => { if (error && !res.headersSent) res.sendStatus(404); });
 });
-app.use(express.static(path.join(__dirname, "public")));
+
+function stripHtml(value) { return String(value || "").replace(/<[^>]*>/g, " ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16))).replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/\\s+/g," ").trim(); }
+app.post("/api/ask", async (req,res) => {
+  const question=typeof req.body?.question==="string"?req.body.question.trim():"";
+  if(question.length<3||question.length>300)return res.status(400).json({error:"Ask a question between 3 and 300 characters."});
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
+  try{
+    const url="https://html.duckduckgo.com/html/?q="+encodeURIComponent(question);
+    const upstream=await fetch(url,{headers:{"User-Agent":"Mozilla/5.0 (compatible; RohanAI/1.0)"},signal:controller.signal});
+    if(!upstream.ok)throw Error("Search provider unavailable");
+    const html=await upstream.text();
+    const snippets=[...html.matchAll(/class="result__snippet[^"]*"[^>]*>([\\s\\S]*?)<\\/a>/gi)].slice(0,3).map(m=>stripHtml(m[1])).filter(Boolean);
+    const titles=[...html.matchAll(/class="result__a[^"]*"[^>]*>([\\s\\S]*?)<\\/a>/gi)].slice(0,3).map(m=>stripHtml(m[1])).filter(Boolean);
+    if(snippets.length)return res.json({ok:true,answer:snippets.join(". ").slice(0,650),source:titles[0]||"DuckDuckGo search results"});
+    const wiki=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch="+encodeURIComponent(question)+"&format=json&origin=*",{signal:controller.signal});
+    const data=await wiki.json(),first=data.query?.search?.[0];
+    if(first){const summary=await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(first.title),{signal:controller.signal});const item=await summary.json();if(item.extract)return res.json({ok:true,answer:item.extract.slice(0,650),source:"Wikipedia"});}
+    return res.json({ok:true,answer:"I couldn't find a reliable answer. Try asking in a different way."});
+  }catch(error){return res.status(502).json({error:"Web search is temporarily unavailable. Please try again."});}
+  finally{clearTimeout(timeout);}
+});
+\napp.use(express.static(path.join(__dirname, "public")));
 app.get("/music.mp3", (_req, res) => res.sendFile(path.join(__dirname, "untitled-video-8_otfFPTjE.mp3")));
 
 app.get("/api/status", (_req, res) => {
