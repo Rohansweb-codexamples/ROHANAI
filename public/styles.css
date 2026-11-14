@@ -201,3 +201,84 @@ html,body{height:auto;min-height:100%;overflow-x:hidden!important;overflow-y:aut
 @media (orientation:landscape) and (min-width:700px){html,body{height:auto!important;min-height:100%;overflow-y:auto!important}.app-shell{min-height:100dvh;height:auto;grid-template-columns:76px minmax(0,1fr)}.sidebar{position:sticky;top:0;height:100dvh;min-height:0;padding:14px 8px}.brand{margin-bottom:18px}.main-area{min-width:0;padding:14px 22px 22px}.topbar{margin-bottom:12px}.topbar h1{font-size:clamp(20px,2.5vw,28px)}.hero-grid{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:stretch}.assistant-card{min-height:0;height:auto;padding:16px}.orb-wrap{height:175px;transform:scale(.72);margin:-12px auto -14px}.assistant-card h2{font-size:24px;margin:4px 0}.orb-subtitle{margin:5px auto 12px}.listen-button{min-height:58px}.voice-screen{margin-top:9px}.conversation{max-height:82px}.right-column{display:grid;grid-template-columns:1fr;gap:12px}.welcome-card,.shortcuts-card{min-height:0;padding:16px}.shortcut{min-height:48px;padding:8px 10px}.bottom-grid{margin-top:12px}.page{min-height:calc(100dvh - 90px)}.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));height:auto;overflow:visible}.settings-card{min-width:0}.full-card{grid-column:1/-1}.voice-layout{grid-template-columns:minmax(0,1fr) minmax(250px,.7fr)}.music-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (orientation:landscape) and (max-width:900px){.app-shell{grid-template-columns:62px minmax(0,1fr)}.sidebar{width:62px}.brand>span:last-child,.side-label,.connection span:last-child,.profile>div:last-of-type,.profile .more{display:none}.nav-item{font-size:0;justify-content:center;padding:10px 4px}.main-area{padding:12px}.hero-grid{grid-template-columns:minmax(0,1fr) minmax(220px,.75fr)}.right-column{display:grid}.assistant-card{padding:12px}.orb-wrap{height:140px;transform:scale(.58);margin:-22px auto -25px}.assistant-card h2{font-size:21px}.assistant-top .model-tag{display:none}.listen-button{min-height:54px}.welcome-card,.shortcuts-card{padding:13px}.shortcut{min-height:43px}.settings-grid{grid-template-columns:1fr 1fr}.setup-step{grid-template-columns:28px minmax(0,1fr) auto;gap:8px}.setup-step small{font-size:11px}}
 @media(max-width:720px){.setup-step{grid-template-columns:30px minmax(0,1fr);}.setup-step button{grid-column:2;justify-self:start}.settings-card{padding:18px 14px}}
+
+
+/* Settings redesign: compact, balanced and tablet-first */
+#page-settings{max-width:1320px;margin:0 auto}
+#page-settings .section-intro{margin:0 0 18px}
+#page-settings .section-intro h2{font-size:clamp(24px,3vw,34px);letter-spacing:-.8px;margin:7px 0}
+#page-settings .section-intro p{font-size:14px;margin:0}
+#page-settings .setup-card{max-width:none;padding:20px 22px;margin-bottom:16px;border-radius:20px}
+#page-settings .settings-heading{align-items:center}
+#page-settings .settings-heading h3{font-size:17px;margin:4px 0}
+#page-settings .settings-heading p{font-size:12px;line-height:1.45;margin:4px 0 0}
+#page-settings .setup-steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+#page-settings .setup-step{min-width:0;min-height:104px;grid-template-columns:30px minmax(0,1fr);grid-template-rows:auto auto;align-content:start;gap:8px;padding:13px;border:1px solid var(--line);border-radius:15px;background:rgba(65,111,174,.07)}
+#page-settings .setup-number{grid-row:1;grid-column:1;width:28px;height:28px}
+#page-settings .setup-step>div{grid-column:2;grid-row:1}
+#page-settings .setup-step strong{font-size:13px}
+#page-settings .setup-step small{font-size:11px;line-height:1.4}
+#page-settings .setup-step button{grid-column:1/-1;justify-self:start;margin-top:3px;padding:8px 12px;font-size:11px}
+#page-settings .setup-footnote{font-size:11px;margin-top:12px}
+#page-settings .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;max-width:none}
+#page-settings .settings-card{min-width:0;padding:20px;border-radius:20px}
+#page-settings .settings-grid>.settings-card{align-self:start}
+#page-settings .setting-row{padding:13px 0;gap:10px}
+#page-settings .setting-row strong{font-size:13px}
+#page-settings .setting-row small{font-size:11px;line-height:1.45}
+#page-settings .range-control{width:100%;margin:7px 0 12px}
+#page-settings .full-card{grid-column:1/-1}
+#page-settings .info-row{padding:10px 0;font-size:12px}
+#page-settings .security-note{font-size:11px;line-height:1.5;padding:12px;border-radius:12px}
+@media (min-width:1101px){
+  #page-settings{padding-right:8px}
+  #page-settings .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #page-settings .setup-step{min-height:112px}
+}
+@media (min-width:721px) and (max-width:1100px){
+  .app-shell{grid-template-columns:72px minmax(0,1fr)!important}
+  .sidebar{width:72px!important;min-width:72px!important;padding:16px 7px!important}
+  .brand{justify-content:center!important;margin:0 0 22px!important}
+  .brand>span:last-child,.side-label{display:none!important}
+  .nav-list{width:100%;display:flex;flex-direction:column;gap:8px;margin:0}
+  .nav-item{width:100%;min-width:0;min-height:54px;justify-content:center!important;padding:10px 4px!important;font-size:0!important;gap:0!important;overflow:hidden}
+  .nav-icon{width:auto!important;font-size:23px}
+  .sidebar-bottom{width:100%}
+  .connection span:last-child,.profile>div:last-of-type,.profile .more{display:none!important}
+  .profile{justify-content:center}
+  #page-settings .section-intro{margin-bottom:14px}
+  #page-settings .setup-card{padding:16px}
+  #page-settings .setup-steps{gap:8px}
+  #page-settings .setup-step{min-height:116px;padding:10px;gap:7px}
+  #page-settings .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  #page-settings .settings-card{padding:15px}
+  #page-settings .setting-row{align-items:flex-start}
+  #page-settings .setting-row .soft-button{flex:none}
+}
+@media (orientation:landscape) and (min-width:721px) and (max-width:1100px){
+  .main-area{padding:14px 18px!important}
+  #page-settings .section-intro h2{font-size:25px}
+  #page-settings .setup-card{padding:14px 16px;margin-bottom:12px}
+  #page-settings .setup-steps{margin-top:10px}
+  #page-settings .setup-step{min-height:96px;padding:9px}
+  #page-settings .setup-step small{font-size:10px}
+  #page-settings .setup-footnote{display:none}
+  #page-settings .settings-grid{gap:10px}
+  #page-settings .settings-card{padding:13px}
+  #page-settings .settings-heading h3{font-size:14px}
+  #page-settings .settings-heading p{font-size:10px}
+  #page-settings .setting-row{padding:9px 0}
+  #page-settings .setting-row small{font-size:10px}
+}
+@media(max-width:720px){
+  #page-settings{width:100%}
+  #page-settings .section-intro{margin-bottom:14px}
+  #page-settings .setup-card{padding:16px}
+  #page-settings .setup-steps{grid-template-columns:1fr}
+  #page-settings .setup-step{min-height:0;grid-template-columns:30px minmax(0,1fr) auto;grid-template-rows:auto;align-items:center;padding:12px}
+  #page-settings .setup-number{grid-row:1;grid-column:1}
+  #page-settings .setup-step>div{grid-column:2;grid-row:1}
+  #page-settings .setup-step button{grid-column:3;grid-row:1;align-self:center;margin:0}
+  #page-settings .settings-grid{grid-template-columns:1fr}
+  #page-settings .full-card{grid-column:auto}
+}
