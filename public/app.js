@@ -24,7 +24,7 @@ function setMood(mood,label){
     else {title.textContent="Your assistant is ready";detail.textContent="Press the large button to allow microphone access and speak.";}
   }
 }
-function resumeWakeListening(){if(!state.wake||state.listening)return;state.listening=true;try{state.recognition?.start();$("#listenLabel").textContent="Listening for Hey Rowan";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch{}}
+function resumeWakeListening(){if(!state.wake||state.listening||!state.recognition)return;try{state.recognition.start();state.listening=true;$("#listenLabel").textContent="ALWAYS LISTENING";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch(error){if(error.name==="InvalidStateError"){state.listening=true;return;}state.listening=false;clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.wake)resumeWakeListening();},1400);}}
 async function speak(text){
   if(!state.speak){if(state.wake)setTimeout(resumeWakeListening,500);return;}
   const finish=()=>{setMood("","READY WHEN YOU ARE");if(state.wake)setTimeout(resumeWakeListening,700);};
@@ -127,39 +127,45 @@ function speechRecognition(){
 async function startRecognition(wake=false){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){
-    $("#orbSubtitle").textContent="Live speech recognition is not available in this browser. Open Rohan AI in the latest Chrome or Edge, or use the message box.";
+    state.wake=false;$("#wakeToggle").checked=false;
+    $("#orbSubtitle").textContent="Always-on voice listening is not supported in this browser. Use the latest Chrome or Edge.";
     $("#voiceScreenTitle").textContent="Speech recognition unavailable";
-    $("#voiceScreenText").textContent="Use Chrome or Edge for microphone voice activation. Text commands remain available.";
+    $("#voiceScreenText").textContent="Open Rohan AI in Chrome or Edge and allow microphone access to use hands-free listening.";
+    $("#listenLabel").textContent="VOICE NOT SUPPORTED";
     return;
   }
   if(!navigator.mediaDevices?.getUserMedia){
+    state.wake=false;$("#wakeToggle").checked=false;
     $("#orbSubtitle").textContent="Microphone access needs a secure HTTPS connection. Open the HTTPS version of Rohan AI.";
+    $("#voiceScreenTitle").textContent="Secure connection required";$("#voiceScreenText").textContent=$("#orbSubtitle").textContent;
     return;
   }
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     stream.getTracks().forEach(track=>track.stop());
   }catch(error){
-    const msg=error.name==="NotAllowedError"?"Microphone permission was denied. Allow it using the site icon beside the address bar.":"The microphone could not be opened: "+error.message;
-    $("#orbSubtitle").textContent=msg;$("#voiceScreenTitle").textContent="Microphone unavailable";$("#voiceScreenText").textContent=msg;
+    state.wake=false;state.listening=false;$("#wakeToggle").checked=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="ALLOW MICROPHONE";
+    const msg=error.name==="NotAllowedError"?"Microphone permission is needed. Choose Allow when Chrome asks, or use the site icon beside the address bar to enable it.":"The microphone could not be opened: "+error.message;
+    $("#orbSubtitle").textContent=msg;$("#voiceScreenTitle").textContent="Microphone permission needed";$("#voiceScreenText").textContent=msg;setMood("","MICROPHONE PERMISSION NEEDED");
     return;
   }
   if(!state.recognition)state.recognition=speechRecognition();
   state.wake=wake;state.recognition.continuous=wake;state.listening=true;
-  $("#listenLabel").textContent=wake?"LISTENING FOR HEY ROWAN":"LISTENING…";
+  $("#listenLabel").textContent=wake?"ALWAYS LISTENING":"LISTENING…";
   $("#listenButton").classList.add("listening");
   setMood("listening",wake?"ALWAYS LISTENING FOR HEY ROWAN":"I'M LISTENING");
   $("#orbSubtitle").textContent=wake?"Say “Hey Rowan” followed by your request.":"Go ahead — I'm listening.";
   try{state.recognition.start();}
   catch(error){
-    state.listening=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";
-    if(error.name!=="InvalidStateError"){$("#orbSubtitle").textContent="Could not start speech recognition: "+error.message;setMood("","MICROPHONE START FAILED");}
+    if(error.name==="InvalidStateError"){state.listening=true;$("#listenButton").classList.add("listening");$("#listenLabel").textContent="ALWAYS LISTENING";return;}
+    state.listening=false;state.wake=false;$("#wakeToggle").checked=false;$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="TRY LISTENING AGAIN";
+    $("#orbSubtitle").textContent="Could not start speech recognition: "+error.message;setMood("","MICROPHONE START FAILED");
   }
 }
-function stopRecognition(){state.listening=false;state.wake=false;clearTimeout(state.restartTimer);if(state.recognition){try{state.recognition.stop();}catch{}}$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START TALKING";setMood("","READY WHEN YOU ARE");}
-$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Listening stopped";$("#voiceScreenText").textContent="Press Start Talking whenever you are ready.";return;}startRecognition(false);};
+function stopRecognition(){state.listening=false;state.wake=false;clearTimeout(state.restartTimer);if(state.recognition){try{state.recognition.stop();}catch{}}$("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START LISTENING";setMood("","READY WHEN YOU ARE");}
+$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Listening paused";$("#voiceScreenText").textContent="Press Start Listening to turn hands-free listening back on.";$("#listenLabel").textContent="START LISTENING";return;}startRecognition(true);};
 function syncSettings(){$("#wakeToggle").checked=state.wake;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");}
-$("#wakeToggle").onchange=e=>{if(e.target.checked){startRecognition(true);}else{stopRecognition();$("#orbSubtitle").textContent="Wake word mode is off.";}};
+$("#wakeToggle").onchange=e=>{if(e.target.checked){startRecognition(true);}else{stopRecognition();$("#orbSubtitle").textContent="Always-on listening is paused. Press Start Listening to resume.";}};
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
 $("#themeToggle").onchange=e=>document.body.classList.toggle("no-glow",!e.target.checked);
 $("#assistantVolume").oninput=e=>{state.assistantVolume=Number(e.target.value);$("#assistantVolumeValue").textContent=state.assistantVolume+"%";if(state.audio)state.audio.volume=state.assistantVolume/100;localStorage.setItem("rohanVolume",state.assistantVolume);};
@@ -285,3 +291,7 @@ $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
 setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();
+// Start hands-free wake-word listening as soon as the app is loaded. The browser will ask for microphone permission if needed.
+window.addEventListener("load",()=>{state.wake=true;syncSettings();$("#listenLabel").textContent="CONNECTING MICROPHONE…";$("#orbSubtitle").textContent="Requesting microphone access so I can listen for “Hey Rowan”.";$("#voiceScreenTitle").textContent="Starting always-on listening";$("#voiceScreenText").textContent="Allow microphone access in your browser when prompted.";startRecognition(true);});
+// If the browser suspends speech recognition while the tab is backgrounded, restart it when the user returns.
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.wake&&!state.listening){resumeWakeListening();}});
