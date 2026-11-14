@@ -165,25 +165,85 @@ app.get("/api/music/file/:filename", (req, res) => {
   res.sendFile(path.join(DATA_DIR, "music", filename), error => { if (error && !res.headersSent) res.sendStatus(404); });
 });
 
-function stripHtml(value) { return String(value || "").replace(/<[^>]*>/g, " ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16))).replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/\s+/g," ").trim(); }
-app.post("/api/ask", async (req,res) => {
-  const question=typeof req.body?.question==="string"?req.body.question.trim():"";
-  if(question.length<3||question.length>300)return res.status(400).json({error:"Ask a question between 3 and 300 characters."});
-  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);
-  try{
-    const url="https://html.duckduckgo.com/html/?q="+encodeURIComponent(question);
-    const upstream=await fetch(url,{headers:{"User-Agent":"Mozilla/5.0 (compatible; RohanAI/1.0)"},signal:controller.signal});
-    if(!upstream.ok)throw Error("Search provider unavailable");
-    const html=await upstream.text();
-    const snippets=[...html.matchAll(/class="result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/gi)].slice(0,3).map(m=>stripHtml(m[1])).filter(Boolean);
-    const titles=[...html.matchAll(/class="result__a[^"]*"[^>]*>([\s\S]*?)<\/a>/gi)].slice(0,3).map(m=>stripHtml(m[1])).filter(Boolean);
-    if(snippets.length)return res.json({ok:true,answer:snippets.join(". ").slice(0,650),source:titles[0]||"DuckDuckGo search results"});
-    const wiki=await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch="+encodeURIComponent(question)+"&format=json&origin=*",{signal:controller.signal});
-    const data=await wiki.json(),first=data.query?.search?.[0];
-    if(first){const summary=await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(first.title),{signal:controller.signal});const item=await summary.json();if(item.extract)return res.json({ok:true,answer:item.extract.slice(0,650),source:"Wikipedia"});}
-    return res.json({ok:true,answer:"I couldn't find a reliable answer. Try asking in a different way."});
-  }catch(error){return res.status(502).json({error:"Web search is temporarily unavailable. Please try again."});}
-  finally{clearTimeout(timeout);}
+function stripHtml(value) {
+  return String(value || "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/\s+/g, " ").trim();
+}
+function decodeSearchUrl(href) {
+  try {
+    const parsed = new URL(href, "https://duckduckgo.com");
+    const target = parsed.searchParams.get("uddg");
+    return target || (parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "");
+  } catch { return ""; }
+}
+function parseDuckDuckGo(html) {
+  const results = [];
+  const links = /<a\b(?=[^>]*\bclass=["'][^"']*\bresult__a\b[^"']*["'])[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = links.exec(html)) && results.length < 6) {
+    const title = stripHtml(match[2]);
+    const url = decodeSearchUrl(match[1]);
+    if (!title || !url || results.some(item => item.url === url)) continue;
+    results.push({ title, url, snippet: "" });
+  }
+  const snippets = [];
+  const snippetPattern = /<(?:a|div|span|td|p)\b(?=[^>]*\bclass=["'][^"']*\bresult__snippet\b[^"']*["'])[^>]*>([\s\S]*?)<\/(?:a|div|span|td|p)>/gi;
+  while ((match = snippetPattern.exec(html)) && snippets.length < 6) {
+    const snippet = stripHtml(match[1]);
+    if (snippet) snippets.push(snippet);
+  }
+  results.forEach((item, i) => item.snippet = snippets[i] || "");
+  return results;
+}
+app.post("/api/ask", async (req, res) => {
+  const question = typeof req.body?.question === "string" ? req.body.question.trim() : "";
+  if (question.length < 3 || question.length > 300) return res.status(400).json({ error: "Ask a question between 3 and 300 characters." });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const upstream = await fetch("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(question), {
+      headers: { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml" },
+      signal: controller.signal
+    });
+    if (!upstream.ok) throw new Error("DuckDuckGo returned HTTP " + upstream.status);
+    const html = await upstream.text();
+    const results = parseDuckDuckGo(html);
+    const useful = results.filter(item => item.snippet);
+    if (useful.length) {
+      const answer = useful.slice(0, 3).map(item => item.snippet).join(" ");
+      return res.json({ ok: true, answer: answer.slice(0, 1000), source: useful[0].title, sources: useful.slice(0, 3).map(({title,url}) => ({title,url})) });
+    }
+    const wikiResponse = await fetch("https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" + encodeURIComponent(question) + "&format=json&origin=*", {
+      headers: { "User-Agent": "RohanAI/1.0 (web search assistant)" }, signal: controller.signal
+    });
+    if (!wikiResponse.ok) throw new Error("Search providers returned no usable results");
+    const data = await wikiResponse.json();
+    const first = data.query?.search?.[0];
+    if (first) {
+      const summaryResponse = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(first.title), {
+        headers: { "User-Agent": "RohanAI/1.0 (web search assistant)" }, signal: controller.signal
+      });
+      if (summaryResponse.ok) {
+        const item = await summaryResponse.json();
+        if (item.extract) return res.json({ ok: true, answer: item.extract.slice(0, 1000), source: "Wikipedia", sources: [{ title: item.title || first.title, url: item.content_urls?.desktop?.page || "https://en.wikipedia.org/wiki/" + encodeURIComponent(first.title.replace(/ /g, "_")) }] });
+      }
+    }
+    if (results.length) return res.json({ ok: true, answer: "I found search results, but they did not include a readable summary. The first result is " + results[0].title + ".", source: results[0].title, sources: results.slice(0, 3).map(({title,url}) => ({title,url})) });
+    return res.json({ ok: true, answer: "I couldn't find a useful answer. Try asking the question another way.", source: "No results" });
+  } catch (error) {
+    console.error("Web search failed:", error.name, error.message);
+    const message = error.name === "AbortError" ? "Web search took too long. Please try again." : "Web search is temporarily unavailable. Please try again.";
+    return res.status(502).json({ error: message });
+  } finally {
+    clearTimeout(timeout);
+  }
 });
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/music.mp3", (_req, res) => res.sendFile(path.join(__dirname, "untitled-video-8_otfFPTjE.mp3")));
