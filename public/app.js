@@ -1,8 +1,8 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { page:"home", pageHistory:[], voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]}, timer:{endAt:0,interval:null,remaining:0,active:false} };
+const state = { page:"home", pageHistory:[], voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"house", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]}, timer:{endAt:0,interval:null,remaining:0,active:false} };
 const tracks=[
- {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
+ {id:"house",name:"House",desc:"House — your current track",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
  {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
  {id:"soundhelix2",name:"SoundHelix Two",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",art:"music_note"},
  {id:"soundhelix3",name:"SoundHelix Three",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",art:"graphic_eq"}
@@ -340,7 +340,8 @@ function handleCommand(raw){
   if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}
   if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}
   const musicCommand=t.replace(/^(?:prism|rohan|rowan)[, ]+/,"").trim();
-  if(/(open|go to|show).*(music|song|player)/.test(musicCommand)||/\bplay\s+(?:(?:some|me|my)\s+)?music\b/.test(musicCommand)||/play (orange horizon|sunny side up|galaxy drift)/.test(musicCommand)){go("music");if(musicCommand.includes("sunny"))selectTrack("soundhelix2");else if(musicCommand.includes("galaxy"))selectTrack("soundhelix3");else if(musicCommand.includes("orange"))selectTrack("soundhelix1");startMusic();reply("Of course. I'm playing music now.");return;}
+  if(/\bplay\s+house\b/.test(musicCommand)){selectTrack("house",true);reply("Playing House.");return;}
+  if(/(open|go to|show).*(music|song|player)/.test(musicCommand)||/\bplay\s+(?:(?:some|me|my)\s+)?music\b/.test(musicCommand)){go("music");startMusic();reply("Of course. I'm playing music now.");return;}
   if(/(pause|stop) music/.test(t)){stopMusic();reply("Music paused.");return;}
   if(/(next|skip) (track|song)/.test(t)){cycleTrack(1);reply("Here's the next soundscape.");return;}
   if(/(voice|change how you sound|voice settings)/.test(t)){go("voice");reply("Let's choose how I sound. Open the voice list to pick a Cartesia voice.");return;}
@@ -592,7 +593,7 @@ function selectTrack(id="library",autoplay=false){
  const changed=state.track!==track.id;
  if(changed){stopMusic();state.track=track.id;musicElement.src=track.src;musicElement.load();}
  $$(".track-card").forEach(b=>b.classList.toggle("selected",b.dataset.track===track.id));
- $("#nowPlaying").textContent=track.name;
+ $("#nowPlaying").textContent=track.name;$("#miniTrackName").textContent=track.name;$("#miniTrackStatus").textContent="Ready";
  $("#trackDescription").textContent=track.desc;
  $("#playerArt").textContent=track.art;
  $("#musicStatus").textContent="Ready to play";
@@ -605,18 +606,18 @@ const musicElement=$("#musicAudio");
 musicElement.src=tracks[0].src;
 musicElement.addEventListener("loadedmetadata",()=>{$("#duration").textContent=formatMusicTime(musicElement.duration);});
 musicElement.addEventListener("canplay",()=>{if(!state.musicOn)$("#musicStatus").textContent="Ready to play";});
-musicElement.addEventListener("waiting",()=>{$("#musicStatus").textContent="Buffering audio…";});
+musicElement.addEventListener("waiting",()=>{$("#musicStatus").textContent="Buffering audio…";});\nmusicElement.addEventListener("play",()=>{if(state.wake&&state.listening&&!state.recognitionRunning)scheduleRecognitionRestart(250);});
 musicElement.addEventListener("error",()=>{
  state.musicOn=false;
  const code=musicElement.error?.code;
  const reason=code===2?"Network error while downloading the audio.":code===3?"The audio format could not be decoded.":code===4?"This audio source is unavailable.":"The audio could not be loaded.";
  $("#trackDescription").textContent=reason;
  $("#musicStatus").textContent=reason+" Choose another track.";
- $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
+ $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniPlay").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#miniTrackStatus").textContent="Paused";
 });
 musicElement.addEventListener("ended",()=>{state.musicOn=false;$("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';$("#musicStatus").textContent="Track finished";});
 function startMusic(){
- if(!musicElement.src)selectTrack(state.track||"library",false);
+ if(!musicElement.src)selectTrack(state.track||"house",false);
  musicElement.loop=true;
  musicElement.muted=false;
  musicElement.volume=Number($("#musicVolume").value)/100;
@@ -624,7 +625,7 @@ function startMusic(){
  musicElement.play().then(()=>{
    state.musicOn=true;
    $("#trackDescription").textContent=tracks.find(t=>t.id===state.track)?.desc||"Streaming audio";
-   $("#musicStatus").textContent="Now playing";
+   $("#musicStatus").textContent="Now playing";$("#miniTrackStatus").textContent="Playing";$("#miniPlay").innerHTML='<span class="material-symbols-rounded">pause</span>';
    $("#playMusic").innerHTML='<span class="material-symbols-rounded">pause</span>';
    if(state.progressTimer)cancelAnimationFrame(state.progressTimer);
    progressMusic();
@@ -641,7 +642,7 @@ function progressMusic(){
  const current=musicElement.currentTime||0,duration=musicElement.duration||0;
  $("#elapsed").textContent=formatMusicTime(current);
  $("#duration").textContent=Number.isFinite(duration)?formatMusicTime(duration):"--:--";
- $("#musicProgress").style.width=(duration?current/duration*100:0)+"%";
+ $("#musicProgress").style.width=(duration?current/duration*100:0)+"%";$("#miniProgress").style.width=(duration?current/duration*100:0)+"%";$("#miniElapsed").textContent=formatMusicTime(current);
  state.progressTimer=requestAnimationFrame(progressMusic);
 }
 function formatMusicTime(seconds){if(!Number.isFinite(seconds))return "00:00";return String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(Math.floor(seconds%60)).padStart(2,"0");}
@@ -652,7 +653,7 @@ function stopMusic(){
  $("#playMusic").innerHTML='<span class="material-symbols-rounded">play_arrow</span>';
 }
 $$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
-$("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
+$("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};$("#miniPlay").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
 setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();restoreTimer();showWelcomeSetup();
