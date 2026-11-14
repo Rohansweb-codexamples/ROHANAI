@@ -588,7 +588,7 @@ function minimax(b,depth,isMax){if(winner(b,"O"))return 10-depth;if(winner(b,"X"
 function finishGame(result){state.gameOver=true;state.scores[result]++;const messages={you:"You won! Brilliant move, Rohan!",ai:"I won this round! Fancy another?",draw:"It's a draw! Good game."};$("#gameStatus").textContent=messages[result];renderBoard();}
 function resetGame(){state.board=Array(9).fill("");state.gameOver=false;$("#gameStatus").textContent="Your turn — X";renderBoard();}$("#resetGame").onclick=resetGame;renderBoard();
 function cycleTrack(direction=1){const index=tracks.findIndex(track=>track.id===state.track);const next=(index+direction+tracks.length)%tracks.length;selectTrack(tracks[next].id,true);}
-function selectTrack(id="library",autoplay=false){
+function selectTrack(id="house",autoplay=false){
  const track=tracks.find(item=>item.id===id)||tracks[0];
  const changed=state.track!==track.id;
  if(changed){stopMusic();state.track=track.id;musicElement.src=track.src;musicElement.load();}
