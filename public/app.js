@@ -1,6 +1,6 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]} };
+const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]} };
 const tracks=[
  {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
  {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
@@ -25,7 +25,7 @@ function setMood(mood,label){
     else {title.textContent="Your assistant is ready";detail.textContent="Press the large button to allow microphone access and speak.";}
   }
 }
-function resumeWakeListening(){if(!state.wake||state.listening||!state.recognition)return;try{state.recognition.start();state.listening=true;$("#listenLabel").textContent="LISTENING — SPEAK NOW";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch(error){if(error.name==="InvalidStateError"){state.listening=true;return;}state.listening=false;clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.wake)resumeWakeListening();},1400);}}
+function resumeWakeListening(){if(!state.wake||state.listening||!state.recognition)return;try{state.recognition.start();state.listening=true;$("#listenLabel").textContent="LISTENING FOR SPARK";$("#listenButton").classList.add("listening");setMood("listening","ALWAYS LISTENING FOR HEY ROWAN");}catch(error){if(error.name==="InvalidStateError"){state.listening=true;return;}state.listening=false;clearTimeout(state.restartTimer);state.restartTimer=setTimeout(()=>{if(state.wake)resumeWakeListening();},1400);}}
 async function speak(text){
   if(!state.speak)return;
   const finish=()=>{state.speaking=false;setMood("","READY WHEN YOU ARE");};
@@ -226,7 +226,7 @@ async function finishAudioQuiz(){
 }
 function handleCommand(raw){
   const text=raw.trim();if(!text)return;
-  const t=text.toLowerCase().replace(/[.!?]/g,"").trim();
+  const t=text.toLowerCase().replace(/[.!?]/g,"").trim().replace(/^spark[, ]*/,"").trim();
   addMessage(text,"user");
   if(state.speaking){
     if(/\b(stop|pause) music\b/.test(t)){
@@ -257,12 +257,12 @@ function handleCommand(raw){
     if(state.audio){state.audio.play().then(()=>{state.speaking=true;setMood("speaking","ROHAN IS SPEAKING");}).catch(()=>{});return;}
     startMusic();return;
   }
-  const quizRequest=t.match(/^(?:prism[, ]+)?(?:please )?(?:start|begin|play|open)? ?(nature|science|space|animals|computing|maths|math|history|geography|baking) quiz$/);
+  const quizRequest=t.match(/^(?:please )?(?:start|begin|play|open)? ?(nature|science|space|animals|computing|maths|math|history|geography|baking) quiz$/);
   if(quizRequest){const topic=quizRequest[1]==="math"?"maths":quizRequest[1];go("quiz");startAudioQuiz();selectQuizTopic(topic);addMessage("Starting your "+topic+" quiz. I will read the questions aloud.");return;}
   if(/(tell me|tell a|read me|make up|start|want) (a )?(short )?(bedtime |children's |kids' |young )?(story|tale)|\bstory time\b|\bfairy tale\b|\btell (me )?(a )?(kids|children's|young) story\b/.test(t)||t==="story"){
     tellStory();return;
   }
-  if(/^(hello|hi|rohan|good morning|good afternoon|good evening)$/.test(t)){reply("Hello, Rohan. What would you like to do?");return;}
+  if(/^(hello|hi|spark|good morning|good afternoon|good evening)$/.test(t)){reply("Hello! What would you like to do?");return;}
   if(/(what can you do|help|commands)/.test(t)){reply("I can open games, play music, tell you the time and date, change settings, and tell you a story. Try saying tell me a story, open games, play music, or what time is it.");return;}
   if(/(tell me the time|what(?:'s| is) the time|what time is it|time is it|current time|time please)/.test(t)){reply("It's "+new Date().toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit"})+".");return;}
   if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}
@@ -301,48 +301,49 @@ function speechRecognition(){
   if(!SR)return null;
   const rec=new SR();
   rec.lang="en-GB";
-  rec.continuous=false;
+  rec.continuous=true;
   rec.interimResults=true;
-  rec.maxAlternatives=5;
+  rec.maxAlternatives=8;
   rec.onstart=()=>{
     state.recognitionRunning=true;state.recognitionStarting=false;state.restartDelay=700;
     if(state.listening){
-      $("#listenLabel").textContent="LISTENING — SPEAK NOW";
+      $("#listenLabel").textContent="LISTENING FOR SPARK";
       $("#listenButton").classList.add("listening");
-      setMood("listening","MICROPHONE ACTIVE — SPEAK NOW");
-      $("#voiceScreenTitle").textContent="Microphone is active";
-      $("#voiceScreenText").textContent="Say what you need now. No name or wake word is required.";
+      setMood("listening","ALWAYS LISTENING FOR SPARK");
+      $("#voiceScreenTitle").textContent="Spark is listening";
+      $("#voiceScreenText").textContent="Say Spark followed by your request, for example Spark, what’s the time?";
     }
   };
   rec.onresult=e=>{
-    const heard=Array.from(e.results).slice(e.resultIndex)
-      .filter(result=>result.isFinal)
-      .map(result=>result[0]?.transcript||"").join(" ").trim();
-    if(!heard)return;
-    if(state.speaking){
-      if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
-      return;
-    }
-    if(!state.listening)return;
-    if(state.wake){
-      const now=Date.now();
-      if(now-state.wakeBufferAt>5500)state.wakeBuffer="";
-      state.wakeBuffer=(state.wakeBuffer+" "+heard).trim().slice(-180);
-      state.wakeBufferAt=now;
-      const normalised=state.wakeBuffer.toLowerCase().replace(/[’']/g,"").replace(/[.,!?]/g," ").replace(/\s+/g," ").trim();
-      const match=normalised.match(/\b(?:(?:hey|okay|ok)\s+)?(?:rohan|rowan)\b\s*(.*)$/i);
-      if(match){
-        const command=(match[1]||"").trim();
-        state.wakeBuffer="";
-        $("#orbHeading").textContent="Yes, Rohan?";
-        $("#orbSubtitle").textContent=command?"I'm listening to your request.":"What can I do for you?";
-        if(command)handleCommand(command);
-        else reply("Yes, Rohan? I'm listening.");
+    if(!state.listening||!state.wake)return;
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const result=e.results[i];
+      if(!result.isFinal)continue;
+      const heard=Array.from(result).map(x=>x.transcript||"").join(" ").trim();
+      if(!heard)continue;
+      if(state.speaking){
+        if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
+        continue;
       }
-    }else{
-      stopRecognition();
-      if(state.quiz.active)handleQuizUtterance(heard);
-      else handleCommand(heard);
+      const normalised=heard.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+      const wakeMatch=normalised.match(/\bspark\b\s*(.*)$/i);
+      const now=Date.now();
+      if(wakeMatch){
+        const command=(wakeMatch[1]||"").trim();
+        state.awaitingCommand=!command;
+        state.awaitingCommandAt=now;
+        $("#orbHeading").textContent="I'm listening.";
+        $("#orbSubtitle").textContent=command?"Spark heard you. Working on it.":"Yes? Go ahead.";
+        if(command){
+          state.awaitingCommand=false;
+          handleCommand(command);
+        }
+      }else if(state.awaitingCommand&&now-state.awaitingCommandAt<7000){
+        state.awaitingCommand=false;
+        handleCommand(heard);
+      }else if(state.awaitingCommand){
+        state.awaitingCommand=false;
+      }
     }
   };
   rec.onerror=e=>{
@@ -369,7 +370,7 @@ function speechRecognition(){
       scheduleRecognitionRestart(state.restartDelay||700);
     }else if(state.listening){
       state.listening=false;
-      $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START LISTENING";
+      $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="ACTIVATE SPARK";
       setMood("","READY WHEN YOU ARE");
       $("#voiceScreenTitle").textContent="Listening ended";
       $("#voiceScreenText").textContent="Press Start Listening to try again.";
@@ -401,12 +402,12 @@ async function startRecognition(wake=false){
     $("#orbSubtitle").textContent=msg;$("#voiceScreenTitle").textContent="Microphone permission needed";$("#voiceScreenText").textContent=msg;setMood("","MICROPHONE PERMISSION NEEDED");return;
   }
   if(!state.recognition)state.recognition=speechRecognition();
-  state.wake=Boolean(wake);state.listening=true;state.wakeBuffer="";
-  state.recognition.continuous=false;
+  state.wake=Boolean(wake);state.listening=true;state.awaitingCommand=false;state.wakeBuffer="";
+  state.recognition.continuous=true;
   $("#listenLabel").textContent="CONNECTING MICROPHONE…";
   $("#listenButton").classList.add("listening");
   setMood("listening","CONNECTING MICROPHONE");
-  $("#orbSubtitle").textContent="Go ahead — say your request. You do not need to say Rohan.";
+  $("#orbSubtitle").textContent="Say Spark followed by your request. Keep this page open.";
   startRecognitionEngine();
 }
 function resumeWakeListening(){
@@ -415,15 +416,15 @@ function resumeWakeListening(){
   startRecognitionEngine();
 }
 function stopRecognition(){
-  state.listening=false;state.wake=false;state.wakeBuffer="";
+  state.listening=false;state.wake=false;state.awaitingCommand=false;state.wakeBuffer="";
   clearTimeout(state.restartTimer);
   if(state.recognition){try{state.recognition.stop();}catch{}}
   state.recognitionRunning=false;state.recognitionStarting=false;
-  $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="START LISTENING";
+  $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="ACTIVATE SPARK";
   setMood("","READY WHEN YOU ARE");
 }
 function primeMusicPlayback(){try{musicElement.muted=true;const attempt=musicElement.play();if(attempt&&typeof attempt.then==="function"){attempt.then(()=>{musicElement.pause();musicElement.currentTime=0;musicElement.muted=false;}).catch(()=>{musicElement.muted=false;});}else{musicElement.muted=false;}}catch{musicElement.muted=false;}}
-$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Microphone is off";$("#voiceScreenText").textContent="Press Start Listening whenever you want to speak.";}else{primeMusicPlayback();startRecognition(false);}};
+$("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Spark is off";$("#voiceScreenText").textContent="Press Activate Spark to turn hands-free listening back on.";}else{primeMusicPlayback();startRecognition(true);}};
 function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");$("#settingsSpeechSpeed").value=state.speed;$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";}
 // Manual activation only; no wake-word listener is started.
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
