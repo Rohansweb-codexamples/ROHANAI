@@ -193,9 +193,9 @@ async function handleQuizUtterance(heard){
  const answer=cleanQuizAnswer(heard);
  if(state.quiz.phase==="topic"&&/\b(options|option|topics|choices)\b/.test(answer)){
   $("#quizHeading").textContent="Choose your topic";
-  $("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History or Geography.";
+  $("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History, Geography or Baking.";
   $("#quizHint").textContent="I'm listening for the topic name.";
-  await speak("Here are your options. Science, Space, Animals, Nature, Computing, Maths, History, or Geography. Say the topic you want.");
+  await speak("Here are your options. Science, Space, Animals, Nature, Computing, Maths, History, Geography, or Baking. Say the topic you want.");
   quizListenAgain();return;
  }
  if(state.quiz.phase==="topic"){
@@ -207,8 +207,8 @@ async function handleQuizUtterance(heard){
   await askQuizQuestion();return;
  }
  if(state.quiz.phase==="answer"){
-  const letterMatch=answer.match(/(?:^|\\s)([abc])(?:$|\\s)/);
-  const wordMatch=answer.match(/\\b(ay|a|bee|be|b|see|sea|c)\\b/);
+  const letterMatch=answer.match(/(?:^|\s)([abc])(?:$|\s)/);
+  const wordMatch=answer.match(/\b(ay|a|bee|be|b|see|sea|c)\b/);
   const spoken=letterMatch?letterMatch[1]:(wordMatch?({ay:"a",bee:"b",be:"b",see:"c",sea:"c"}[wordMatch[1]]||wordMatch[1]):"");
   if(["a","b","c"].includes(spoken))await quizSelectAnswer(spoken.toUpperCase());
  }
