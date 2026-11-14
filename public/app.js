@@ -1,13 +1,14 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]}, timer:{endAt:0,interval:null,remaining:0,active:false} };
+const state = { page:"home", pageHistory:[], voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, awaitingCommand:false, awaitingCommandAt:0, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]}, timer:{endAt:0,interval:null,remaining:0,active:false} };
 const tracks=[
  {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
  {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
  {id:"soundhelix2",name:"SoundHelix Two",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",art:"music_note"},
  {id:"soundhelix3",name:"SoundHelix Three",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",art:"graphic_eq"}
 ];
-function go(page){state.page=page;$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const titles={home:"Good morning, Rohan",games:"Let's play a game",quiz:"Audio quiz",music:"Your music space",voice:"Voice studio",settings:"Settings"};$("#pageTitle").textContent=titles[page]||"Rohan AI";if(page==="voice"&&!state.voices.length)loadVoices();if(page==="games")renderBoard();if(page==="settings")syncSettings();window.scrollTo({top:0,behavior:"smooth"});}
+function goBack(){const previous=state.pageHistory.pop()||"home";if(previous===state.page){go("home");return;}go(previous);reply(previous==="home"?"Going back to the home screen.":"Going back.");}
+function go(page){if(page!==state.page)state.pageHistory.push(state.page);state.page=page;$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const titles={home:"Good morning, Rohan",games:"Let's play a game",quiz:"Audio quiz",music:"Your music space",voice:"Voice studio",settings:"Settings"};$("#pageTitle").textContent=titles[page]||"Rohan AI";if(page==="voice"&&!state.voices.length)loadVoices();if(page==="games")renderBoard();if(page==="settings")syncSettings();window.scrollTo({top:0,behavior:"smooth"});}
 $$("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 $("#quickSettings").onclick=()=>go("settings");
 $("#tellStoryButton").onclick=()=>tellStory();
@@ -229,6 +230,8 @@ function formatTimer(ms){
  const total=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
  return h?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
+function saveTimer(){localStorage.setItem("rohanTimer",JSON.stringify({active:state.timer.active,endAt:state.timer.endAt,remaining:state.timer.remaining}));}
+function restoreTimer(){try{const saved=JSON.parse(localStorage.getItem("rohanTimer")||"null");if(!saved)return;state.timer.active=!!saved.active;state.timer.endAt=Number(saved.endAt)||0;state.timer.remaining=Number(saved.remaining)||0;if(state.timer.active){if(state.timer.endAt<=Date.now()){state.timer.active=false;state.timer.remaining=0;state.timer.endAt=0;localStorage.removeItem("rohanTimer");setTimeout(()=>reply("Your timer finished while the page was closed."),1200);}else state.timer.interval=setInterval(renderTimer,250);}renderTimer();}catch{localStorage.removeItem("rohanTimer");}}
 function renderTimer(){
  const display=$("#timerDisplay"),status=$("#timerStatus");
  if(!display||!status)return;
@@ -246,14 +249,14 @@ function startTimer(seconds){
  const duration=Math.max(1,Math.min(86400,Math.round(seconds)))*1000;
  clearInterval(state.timer.interval);
  state.timer.remaining=duration;state.timer.endAt=Date.now()+duration;state.timer.active=true;
- state.timer.interval=setInterval(renderTimer,250);renderTimer();
+ state.timer.interval=setInterval(renderTimer,250);saveTimer();renderTimer();
  const mins=Math.floor(seconds/60),secs=Math.round(seconds%60);
  const spoken=mins&&secs?mins+" minutes and "+secs+" seconds":mins?mins+" minute"+(mins===1?"":"s"):secs+" seconds";
  reply("Your "+spoken+" timer has started.");
 }
 function finishTimer(){
  if(!state.timer.active)return;
- clearInterval(state.timer.interval);state.timer.active=false;state.timer.remaining=0;state.timer.endAt=0;renderTimer();
+ clearInterval(state.timer.interval);state.timer.active=false;state.timer.remaining=0;state.timer.endAt=0;localStorage.removeItem("rohanTimer");renderTimer();
  reply("Your timer is finished!");
 }
 function cancelTimer(){
@@ -261,11 +264,11 @@ function cancelTimer(){
 }
 function pauseTimer(){
  if(!state.timer.active)return false;
- state.timer.remaining=Math.max(0,state.timer.endAt-Date.now());state.timer.active=false;clearInterval(state.timer.interval);renderTimer();return true;
+ state.timer.remaining=Math.max(0,state.timer.endAt-Date.now());state.timer.active=false;clearInterval(state.timer.interval);saveTimer();renderTimer();return true;
 }
 function resumeTimer(){
  if(state.timer.active||state.timer.remaining<=0)return false;
- state.timer.endAt=Date.now()+state.timer.remaining;state.timer.active=true;state.timer.interval=setInterval(renderTimer,250);renderTimer();return true;
+ state.timer.endAt=Date.now()+state.timer.remaining;state.timer.active=true;state.timer.interval=setInterval(renderTimer,250);saveTimer();renderTimer();return true;
 }
 function parseTimerDuration(text){
  const matches=[...text.matchAll(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)/g)];
@@ -285,8 +288,10 @@ function handleCommand(raw){
       addMessage(t.startsWith("stop")?"Okay, I've stopped speaking.":"Okay, I've paused. Say resume when you're ready.");
       return;
     }
-    return;
+    cancelSpeech("stop");
   }
+  if(/^(go back|back|previous page|return to previous page|take me back)$/.test(t)){goBack();return;}
+  if(/^(go home|home|back to home|return home|open home)$/.test(t)){go("home");reply("Going to the home screen.");return;}
   const timerDuration=parseTimerDuration(t);
   if(/\b(?:set|start|begin|make)\b.*\btimer\b|\btimer\s+for\b|\b\d+(?:\.\d+)?\s*(?:hours?|hrs?|minutes?|mins?|seconds?|secs?)\s+timer\b/.test(t)&&timerDuration>0){
     startTimer(timerDuration);return;
@@ -372,7 +377,7 @@ function speechRecognition(){
   rec.interimResults=true;
   rec.maxAlternatives=8;
   rec.onstart=()=>{
-    state.recognitionRunning=true;state.recognitionStarting=false;state.restartDelay=700;
+    state.recognitionRunning=true;state.recognitionStarting=false;state.restartDelay=700;if(state.wake){localStorage.setItem("rohanHandsFreeSetup","true");document.body.classList.add("spark-handsfree");}
     if(state.listening){
       $("#listenLabel").textContent="LISTENING FOR SPARK";
       $("#listenButton").classList.add("listening");
@@ -389,17 +394,18 @@ function speechRecognition(){
       const alternatives=Array.from(result).map(x=>(x.transcript||"").trim()).filter(Boolean);
       const heard=(alternatives.find(x=>/\bspark\b/i.test(x))||alternatives[0]||"").trim();
       if(!heard)continue;
-      if(state.speaking){
-        if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
-        continue;
-      }
-      if(state.quiz.active&&state.quiz.phase==="answer"&&!/\bspark\b/i.test(heard)){
+      if(state.quiz.active&&state.quiz.phase==="answer"&&!/\bspark\b/i.test(heard)&&!state.speaking){
         handleQuizUtterance(heard);
         continue;
       }
       const normalised=heard.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
       const wakeMatch=normalised.match(/\bspark\b\s*(.*)$/i);
       const now=Date.now();
+      if(state.speaking){
+        if(wakeMatch&&wakeMatch[1].trim())handleCommand(wakeMatch[1].trim());
+        else if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
+        continue;
+      }
       if(wakeMatch){
         const command=(wakeMatch[1]||"").trim();
         state.awaitingCommand=!command;
@@ -422,6 +428,8 @@ function speechRecognition(){
     state.recognitionStarting=false;
     if(e.error==="not-allowed"||e.error==="service-not-allowed"){
       state.listening=false;state.wake=false;state.recognitionRunning=false;
+      localStorage.removeItem("rohanHandsFreeSetup");document.body.classList.remove("spark-handsfree");
+      $("#welcomeSetup")?.classList.remove("hidden");
       $("#orbSubtitle").textContent="Microphone access is blocked. Allow Microphone for this site in Chrome or your tablet settings.";
       $("#listenButton").classList.remove("listening");$("#listenLabel").textContent="ALLOW MICROPHONE";
       $("#wakeToggle").checked=false;
@@ -481,7 +489,7 @@ async function startRecognition(wake=false){
   setMood("listening","CONNECTING SPARK");
   $("#orbSubtitle").textContent="Say Spark followed by your request. Keep this page open.";
   startRecognitionEngine();
-  if(state.wake){document.body.classList.add("spark-handsfree");localStorage.setItem("rohanHandsFreeSetup","true");}
+  if(state.wake){document.body.classList.add("spark-handsfree");}
 }
 function resumeWakeListening(){
   if(!state.wake)return;
@@ -565,8 +573,8 @@ $$(".accent-choice").forEach(b=>b.onclick=()=>setAccent(b.dataset.accent));
 $("#welcomeVoiceSelect").onchange=e=>chooseVoice(e.target.value);
 $("#previewWelcomeVoice").onclick=()=>{if(!state.voiceId){$("#welcomeVoiceStatus").textContent="No Cartesia voice is available yet.";return;}speak("Hello! This is a preview of the voice you selected for Rohan AI.");};
 $("#retryWelcomeVoice").onclick=loadVoices;
-$("#finishSetup").onclick=()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");$("#orbSubtitle").textContent="Activating Spark. Allow microphone access if asked.";startRecognition(true);};
-function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanHandsFreeSetup")!=="true")$("#welcomeSetup").classList.remove("hidden");else startRecognition(true);}
+$("#finishSetup").onclick=async()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);$("#orbSubtitle").textContent="Activating Spark. Allow microphone access if asked.";await startRecognition(true);if(state.listening){localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");}};
+function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanHandsFreeSetup")==="true"){startRecognition(true).catch(()=>{document.body.classList.remove("spark-handsfree");$("#welcomeSetup").classList.remove("hidden");});}else $("#welcomeSetup").classList.remove("hidden");}
 
 const winning=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function renderBoard(){const board=$("#board");board.innerHTML="";state.board.forEach((v,i)=>{const b=document.createElement("button");b.className="cell "+(v==="O"?"o":"");b.textContent=v;b.disabled=!!v||state.gameOver;b.setAttribute("aria-label","Square "+(i+1)+(v?", "+v:""));b.onclick=()=>playMove(i);board.append(b);});$("#scoreLine").innerHTML="You "+state.scores.you+" <b>·</b> AI "+state.scores.ai+" <b>·</b> Draws "+state.scores.draw;}
@@ -645,5 +653,5 @@ $$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
 $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
-setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();showWelcomeSetup();
+setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();restoreTimer();showWelcomeSetup();
 // The microphone stays off until the user presses Start Listening. No wake word is required.
