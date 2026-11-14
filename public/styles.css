@@ -335,3 +335,6 @@ body[data-accent="pink"] .brand-mark,body[data-accent="pink"] .settings-icon,bod
 .welcome-preview{margin-top:10px;min-height:38px;padding:8px 12px;font-size:11px}
 
 .settings-accent-choices{margin-top:8px}.settings-accent-choices .accent-choice{min-height:42px;padding:8px 10px;font-size:11px}
+
+.welcome-voice-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.welcome-voice-actions .soft-button{margin-top:0}.welcome-retry{font-size:11px}
+.welcome-voice-select:disabled{opacity:.8;cursor:wait}
