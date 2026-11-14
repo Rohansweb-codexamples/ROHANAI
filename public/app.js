@@ -112,7 +112,30 @@ function startAudioQuiz(){state.quiz={active:true,phase:"topic",topic:"",index:0
 function stopAudioQuiz(){state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Your quiz has been stopped. Press Start audio quiz to try again." ;$("#quizProgress").textContent="Stopped";$("#quizHint").textContent="Press Start audio quiz whenever you are ready." ;$("#startAudioQuiz").textContent="Start audio quiz";}
 $("#startAudioQuiz").addEventListener("click",()=>{if(state.quiz.active){stopRecognition();startRecognition(false);}else startAudioQuiz();});
 $("#stopAudioQuiz").addEventListener("click",stopAudioQuiz);
-async function quizListenAgain(){if(!state.quiz.active)return;$("#startAudioQuiz").textContent="Listening…";startRecognition(false);}
+async function quizListenAgain(){
+ if(!state.quiz.active)return;
+ $("#startAudioQuiz").textContent="Preparing microphone…";
+ // SpeechRecognition must fully finish its previous one-shot session before it can be started again.
+ if(state.recognitionRunning||state.recognitionStarting){
+  try{state.recognition?.stop();}catch{}
+  const waitForEnd=()=>new Promise(resolve=>{
+   let done=false;
+   const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve();};
+   const timer=setTimeout(finish,1200);
+   if(state.recognition){
+    const previous=state.recognition.onend;
+    state.recognition.onend=event=>{try{previous?.call(state.recognition,event);}finally{finish();}};
+   }else finish();
+  });
+  await waitForEnd();
+ }
+ if(!state.quiz.active)return;
+ $("#startAudioQuiz").textContent="Listening for your answer…";
+ await startRecognition(false);
+ if(state.quiz.active&&!state.listening){
+  $("#quizHint").textContent="Microphone stopped. Press Start audio quiz to try again, and allow microphone access if asked.";
+ }
+}
 async function askQuizQuestion(){
  const q=state.quiz.questions[state.quiz.index];
  if(!q){await finishAudioQuiz();return;}
@@ -137,7 +160,7 @@ async function handleQuizUtterance(heard){
   quizListenAgain();return;
  }
  if(state.quiz.phase==="topic"){
-  const topic=quizTopics.find(t=>answer===t||answer.includes(t)||(t==="maths"&&answer.includes("math")));
+  const topic=quizTopics.find(t=>new RegExp("\\\\b"+t+"\\\\b").test(answer)||(t==="maths"&&/\\bmath\\b/.test(answer))||(t==="animals"&&/\\b(animal|wildlife)\\b/.test(answer))||(t==="computing"&&/\\b(computer|technology|coding)\\b/.test(answer)));
   if(!topic){await speak("I didn't catch a topic. Say options to hear the list, or say Science, Space, Animals, Nature, Computing, Maths, History, or Geography.");quizListenAgain();return;}
   state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
   $("#quizHint").textContent="Topic selected: "+topic+". Get ready!";
