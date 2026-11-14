@@ -78,9 +78,9 @@
         <div class="section-intro"><span class="card-kicker">YOUR SOUND SPACE</span><h2>Your music, your way.</h2><p>Choose a track, press play, and keep listening while you explore Rohan AI.</p></div>
         <audio id="musicAudio" preload="metadata" crossorigin="anonymous"></audio>
         <div class="music-library">
-          <div class="music-library-head"><div><span class="card-kicker">PLAYLIST</span><h3>Choose your soundtrack</h3></div><a class="pixabay-link" href="https://pixabay.com/music/" target="_blank" rel="noopener noreferrer"><span class="material-symbols-rounded">open_in_new</span> Browse Pixabay music</a></div>
+          <div class="music-library-head"><div><span class="card-kicker">PLAYLIST</span><h3>Choose your soundtrack</h3><p><a href="/speaker.html" class="speaker-app-link">Open the Rohan Speaker app</a></p></div><a class="pixabay-link" href="https://pixabay.com/music/" target="_blank" rel="noopener noreferrer"><span class="material-symbols-rounded">open_in_new</span> Browse Pixabay music</a></div>
           <div class="music-grid">
-            <button class="track-card selected" data-track="library" aria-label="Play your own MP3"><span class="track-art art-library"><span class="material-symbols-rounded">graphic_eq</span></span><span class="track-info"><strong>Your music</strong><small>Your uploaded Rohan AI MP3</small></span><span class="track-play material-symbols-rounded">play_arrow</span></button>
+            <button class="track-card selected" data-track="house" aria-label="Play House"><span class="track-art art-library"><span class="material-symbols-rounded">graphic_eq</span></span><span class="track-info"><strong>House</strong><small>Your current track</small></span><span class="track-play material-symbols-rounded">play_arrow</span></button>
             <button class="track-card" data-track="soundhelix1" aria-label="Play SoundHelix track 1"><span class="track-art"><span class="material-symbols-rounded">headphones</span></span><span class="track-info"><strong>SoundHelix One</strong><small>Sample track · SoundHelix</small></span><span class="track-play material-symbols-rounded">play_arrow</span></button>
             <button class="track-card" data-track="soundhelix2" aria-label="Play SoundHelix track 2"><span class="track-art"><span class="material-symbols-rounded">music_note</span></span><span class="track-info"><strong>SoundHelix Two</strong><small>Sample track · SoundHelix</small></span><span class="track-play material-symbols-rounded">play_arrow</span></button>
             <button class="track-card" data-track="soundhelix3" aria-label="Play SoundHelix track 3"><span class="track-art"><span class="material-symbols-rounded">graphic_eq</span></span><span class="track-info"><strong>SoundHelix Three</strong><small>Sample track · SoundHelix</small></span><span class="track-play material-symbols-rounded">play_arrow</span></button>
@@ -113,6 +113,7 @@
       <footer class="footer">ROHAN AI <span>·</span> YOUR OWN LITTLE CORNER OF THE INTERNET</footer>
     </main>
   </div>
+  <div class="mini-player-bar" id="miniPlayerBar"><div class="mini-player-info"><span class="mini-player-art material-symbols-rounded">graphic_eq</span><div><strong id="miniTrackName">House</strong><small id="miniTrackStatus">Ready</small></div></div><div class="mini-player-progress"><span id="miniProgress"></span></div><span class="mini-player-time" id="miniElapsed">00:00</span><button type="button" id="miniPlay" class="mini-player-button" aria-label="Play or pause music"><span class="material-symbols-rounded">play_arrow</span></button></div>
   <div class="welcome-setup-overlay" id="welcomeSetup" aria-modal="true" role="dialog" aria-labelledby="welcomeSetupTitle">
     <div class="welcome-setup-panel">
       <div class="welcome-setup-mark">R</div>
