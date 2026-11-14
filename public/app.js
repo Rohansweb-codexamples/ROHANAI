@@ -95,11 +95,12 @@ function handleCommand(raw){
   if(/(tell me the time|what(?:'s| is) the time|what time is it|time is it|current time|time please)/.test(t)){reply("It's "+new Date().toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit"})+".");return;}
   if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}
   if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}
-  if(/(open|go to|show).*(music|song|player)/.test(t)||/play (some )?music|play (orange horizon|sunny side up|galaxy drift)/.test(t)){go("music");if(t.includes("sunny"))selectTrack("upbeat");else if(t.includes("galaxy"))selectTrack("space");else if(t.includes("orange"))selectTrack("focus");startMusic();reply("Music time! I've opened the music player. Your soundscape is ready.");return;}
+  const musicCommand=t.replace(/^(?:prism|rohan|rowan)[, ]+/,"").trim();
+  if(/(open|go to|show).*(music|song|player)/.test(musicCommand)||/\bplay\s+(?:(?:some|me|my)\s+)?music\b/.test(musicCommand)||/play (orange horizon|sunny side up|galaxy drift)/.test(musicCommand)){go("music");if(musicCommand.includes("sunny"))selectTrack("soundhelix2");else if(musicCommand.includes("galaxy"))selectTrack("soundhelix3");else if(musicCommand.includes("orange"))selectTrack("soundhelix1");startMusic();reply("Of course. I'm playing music now.");return;}
   if(/(pause|stop) music/.test(t)){stopMusic();reply("Music paused.");return;}
   if(/(next|skip) (track|song)/.test(t)){cycleTrack(1);reply("Here's the next soundscape.");return;}
   if(/(voice|change how you sound|voice settings)/.test(t)){go("voice");reply("Let's choose how I sound. Open the voice list to pick a Cartesia voice.");return;}
-  if(/(settings|wake word|microphone)/.test(t)){go("settings");reply("I've opened your settings.");return;}
+  if(/(settings|setup|wake word|microphone)/.test(t)){go("settings");reply("I've opened your setup and settings.");return;}
   if(/(volume up|louder)/.test(t)){state.assistantVolume=Math.min(100,state.assistantVolume+10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume up.");return;}
   if(/(volume down|quieter)/.test(t)){state.assistantVolume=Math.max(0,state.assistantVolume-10);$("#assistantVolume").value=state.assistantVolume;syncSettings();reply("I've turned my speaking volume down.");return;}
   if(/(new game|restart game)/.test(t)){go("games");resetGame();reply("A fresh board! You're X. Your move.");return;}
@@ -249,13 +250,17 @@ function stopRecognition(){
   setMood("","READY WHEN YOU ARE");
 }
 $("#listenButton").onclick=()=>{if(state.listening){stopRecognition();$("#voiceScreenTitle").textContent="Microphone is off";$("#voiceScreenText").textContent="Press Start Listening whenever you want to speak.";}else{startRecognition(false);}};
-function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");}
+function syncSettings(){if($("#wakeToggle"))$("#wakeToggle").checked=false;$("#speakToggle").checked=state.speak;$("#assistantVolume").value=state.assistantVolume;$("#assistantVolumeValue").textContent=state.assistantVolume+"%";$("#themeToggle").checked=!document.body.classList.contains("no-glow");$("#settingsSpeechSpeed").value=state.speed;$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";}
 // Manual activation only; no wake-word listener is started.
 $("#speakToggle").onchange=e=>{state.speak=e.target.checked;localStorage.setItem("rohanSpeak",state.speak);};
 $("#themeToggle").onchange=e=>document.body.classList.toggle("no-glow",!e.target.checked);
 $("#assistantVolume").oninput=e=>{state.assistantVolume=Number(e.target.value);$("#assistantVolumeValue").textContent=state.assistantVolume+"%";if(state.audio)state.audio.volume=state.assistantVolume/100;localStorage.setItem("rohanVolume",state.assistantVolume);};
 $("#testMic").onclick=()=>startRecognition(false);
-$("#speechSpeed").value=state.speed;$("#speechSpeed").oninput=e=>{state.speed=Number(e.target.value);$("#speedValue").textContent=state.speed.toFixed(1)+"×";localStorage.setItem("rohanSpeed",state.speed);};
+$("#setupMic").onclick=()=>{go("home");startRecognition(false);};
+$("#setupVoice").onclick=()=>{if(!state.voiceId){$("#voiceNote").textContent="The Cartesia voice is still loading. Try again in a moment.";go("voice");return;}speak("Microphone and voice setup check. Hello, Rohan. Your assistant voice is working.");};
+$("#setupMusic").onclick=()=>go("music");
+$("#speechSpeed").value=state.speed;$("#speechSpeed").oninput=e=>{state.speed=Number(e.target.value);$("#speedValue").textContent=state.speed.toFixed(1)+"×";$("#settingsSpeechSpeed").value=state.speed;$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";localStorage.setItem("rohanSpeed",state.speed);};
+$("#settingsSpeechSpeed").oninput=e=>{state.speed=Number(e.target.value);$("#speedValue").textContent=state.speed.toFixed(1)+"×";$("#settingsSpeedValue").textContent=state.speed.toFixed(1)+"×";$("#speechSpeed").value=state.speed;localStorage.setItem("rohanSpeed",state.speed);};
 async function loadStatus(){
   try{
     const r=await fetch("/api/status",{cache:"no-store"}),d=await r.json();
