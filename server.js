@@ -26,7 +26,7 @@ const DEVICE_STORE = path.join(DATA_DIR, "device-sessions.json");
 try {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const saved = JSON.parse(fs.readFileSync(DEVICE_STORE, "utf8"));
-  for (const item of saved) if (item && item.code && item.controllerToken) deviceSessions.set(item.code, item);
+  for (const item of saved) if (item && item.code && item.speakerToken) deviceSessions.set(item.code, item);
 } catch {}
 function saveDeviceSessions() {
   try {
@@ -54,14 +54,14 @@ function findDeviceByToken(token, role) {
 app.post("/api/device/speaker-create", (_req, res) => {
  cleanDeviceSessions(); let code;
  do { code=String(randomInt(100000,1000000)); } while(deviceSessions.has(code));
- const session={code,controllerToken:"",speakerToken:randomBytes(24).toString("hex"),createdAt:Date.now(),lastSeen:Date.now(),speakerConnected:true,commands:[],state:{playing:false,track:"House",currentTime:0,duration:0,volume:0.85}};
+ const used=[...deviceSessions.values()].map(x=>Number(String(x.name||"").split("-").pop())).filter(Number.isFinite);let number=1;while(used.includes(number))number++;const session={code,id:randomBytes(10).toString("hex"),name:"Spark Plus-"+number,controllerToken:"",speakerToken:randomBytes(24).toString("hex"),createdAt:Date.now(),lastSeen:Date.now(),speakerConnected:true,commands:[],state:{playing:false,track:"House",currentTime:0,duration:0,volume:0.85}};
  deviceSessions.set(code,session);saveDeviceSessions();res.json({ok:true,code,token:session.speakerToken});
 });
 app.post("/api/device/controller-join",(req,res)=>{
  cleanDeviceSessions();const code=String(req.body?.code||"").replace(/\D/g,"").slice(0,6);const session=deviceSessions.get(code);
- if(!session)return res.status(404).json({error:"Code not found. Check the code shown on the speaker."});
+ if(!session||!session.speakerToken||Date.now()-session.lastSeen>15000)return res.status(404).json({error:"That speaker is no longer online. Refresh the device list."});
  if(session.controllerToken)return res.status(409).json({error:"This speaker is already connected to a controller."});
- session.controllerToken=randomBytes(24).toString("hex");saveDeviceSessions();res.json({ok:true,token:session.controllerToken,code});
+ session.controllerToken=randomBytes(24).toString("hex");saveDeviceSessions();res.json({ok:true,token:session.controllerToken,code:session.code,name:session.name||"Spark Plus"});
 });
 app.post("/api/device/create", (_req, res) => {
   cleanDeviceSessions();
