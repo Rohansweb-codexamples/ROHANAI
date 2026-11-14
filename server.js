@@ -23,20 +23,20 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.get("/api/voices", async (_req, res) => {
-  if (!CARTESIA_API_KEY) return res.status(503).json({ error: "Cartesia is not configured yet. Add CARTESIA_API_KEY to your server environment." });
+  if (!CARTESIA_API_KEY) return res.status(503).json({ error: "Cartesia is not configured. Add CARTESIA_API_KEY to your hosting environment." });
   try {
     const upstream = await fetch("https://api.cartesia.ai/voices", {
       headers: { "X-API-Key": CARTESIA_API_KEY, "Cartesia-Version": CARTESIA_VERSION }
     });
     const data = await upstream.json();
-    if (!upstream.ok) return res.status(upstream.status).json({ error: data.message || "Could not load Cartesia voices." });
-    const voices = (data.data || data.voices || []).map(v => ({
-      id: v.id, name: v.name || v.description || "Cartesia voice",
-      description: v.description || "", language: v.language || "en"
-    })).filter(v => v.id);
-    res.json({ voices });
-  } catch {
-    res.status(502).json({ error: "Cartesia voice service could not be reached." });
+    if (!upstream.ok) return res.status(upstream.status).json({ error: data.message || data.error || "Cartesia could not load your voice." });
+    const source = Array.isArray(data) ? data : (data.data || data.voices || data.items || []);
+    const first = source.find(v => v && v.id);
+    if (!first) return res.status(502).json({ error: "Cartesia returned no available voices for this API key." });
+    res.json({ voice: { id: first.id, name: first.name || first.description || "Rohan's Cartesia voice" } });
+  } catch (error) {
+    console.error("Cartesia voices error:", error.message);
+    res.status(502).json({ error: "Could not connect to Cartesia voice service." });
   }
 });
 
