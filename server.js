@@ -57,8 +57,9 @@ app.post("/api/device/speaker-create", (_req, res) => {
  const used=[...deviceSessions.values()].map(x=>Number(String(x.name||"").split("-").pop())).filter(Number.isFinite);let number=1;while(used.includes(number))number++;const session={code,id:randomBytes(10).toString("hex"),name:"Spark Plus-"+number,controllerToken:"",speakerToken:randomBytes(24).toString("hex"),createdAt:Date.now(),lastSeen:Date.now(),speakerConnected:true,commands:[],state:{playing:false,track:"House",currentTime:0,duration:0,volume:0.85}};
  deviceSessions.set(code,session);saveDeviceSessions();res.json({ok:true,code,token:session.speakerToken});
 });
+app.get("/api/device/discover",(_req,res)=>{cleanDeviceSessions();const now=Date.now();const devices=[...deviceSessions.values()].filter(s=>s.speakerToken&&s.speakerConnected&&now-s.lastSeen<15000).map(s=>({id:s.id||s.code,name:s.name||"Spark Plus",connected:Boolean(s.controllerToken),lastSeen:s.lastSeen}));res.setHeader("Cache-Control","no-store");res.json({ok:true,devices});});
 app.post("/api/device/controller-join",(req,res)=>{
- cleanDeviceSessions();const code=String(req.body?.code||"").replace(/\D/g,"").slice(0,6);const session=deviceSessions.get(code);
+ cleanDeviceSessions();const deviceId=String(req.body?.deviceId||"");const code=String(req.body?.code||"").replace(/\D/g,"").slice(0,6);const session=[...deviceSessions.values()].find(s=>(deviceId&&(s.id||s.code)===deviceId)||(!deviceId&&s.code===code));
  if(!session||!session.speakerToken||Date.now()-session.lastSeen>15000)return res.status(404).json({error:"That speaker is no longer online. Refresh the device list."});
  if(session.controllerToken)return res.status(409).json({error:"This speaker is already connected to a controller."});
  session.controllerToken=randomBytes(24).toString("hex");saveDeviceSessions();res.json({ok:true,token:session.controllerToken,code:session.code,name:session.name||"Spark Plus"});
