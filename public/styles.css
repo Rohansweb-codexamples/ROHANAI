@@ -282,3 +282,44 @@ html,body{height:auto;min-height:100%;overflow-x:hidden!important;overflow-y:aut
   #page-settings .settings-grid{grid-template-columns:1fr}
   #page-settings .full-card{grid-column:auto}
 }
+
+
+/* Tablet landscape rebuild: replace cramped vertical rail with a full-width top bar */
+@media (orientation:landscape) and (min-width:721px) and (max-width:1100px){
+  html,body{width:100%;min-width:0;overflow-x:hidden!important}
+  .app-shell{display:flex!important;flex-direction:column!important;width:100%;min-height:100dvh;grid-template-columns:none!important}
+  .sidebar{position:sticky!important;top:0;z-index:50;width:100%!important;min-width:0!important;height:68px!important;min-height:68px!important;padding:8px 18px!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;border-right:0!important;border-bottom:1px solid rgba(133,171,235,.2)!important;background:rgba(7,12,27,.97)!important;backdrop-filter:blur(18px)}
+  .brand{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important;margin:0!important;white-space:nowrap;font-size:14px!important}
+  .brand>span:last-child{display:inline!important}
+  .brand-mark{width:34px;height:34px}
+  .side-label{display:none!important}
+  .nav-list{display:flex!important;flex:1!important;justify-content:flex-end!important;align-items:center!important;gap:6px!important;width:auto!important;margin:0!important;flex-direction:row!important}
+  .nav-item{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;width:auto!important;min-width:0!important;min-height:42px!important;padding:8px 12px!important;border-radius:12px!important;font-size:12px!important;line-height:1!important;white-space:nowrap!important;overflow:visible!important}
+  .nav-icon{display:inline-flex!important;width:auto!important;font-size:18px!important}
+  .nav-icon .material-symbols-rounded{font-size:19px!important}
+  .sidebar-bottom{display:none!important}
+  .main-area{width:100%!important;min-width:0!important;max-width:none!important;padding:18px 24px 30px!important;margin:0!important}
+  .topbar{margin-bottom:16px!important}
+  .topbar h1{font-size:clamp(22px,2.5vw,30px)!important}
+  .page{width:100%!important;max-width:none!important;min-height:calc(100dvh - 110px)!important}
+  #page-settings{max-width:1180px!important;margin:0 auto!important}
+  #page-settings .setup-card{padding:18px 20px!important;margin-bottom:14px!important}
+  #page-settings .setup-steps{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+  #page-settings .setup-step{min-height:108px!important;padding:12px!important}
+  #page-settings .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
+  #page-settings .settings-card{padding:18px!important}
+  #page-settings .full-card{grid-column:1/-1!important}
+}
+@media (orientation:landscape) and (min-width:721px) and (max-width:820px){
+  .sidebar{height:62px!important;min-height:62px!important;padding:6px 10px!important;gap:8px!important}
+  .brand{font-size:12px!important;gap:6px!important}
+  .brand-mark{width:30px;height:30px}
+  .nav-list{gap:2px!important}
+  .nav-item{padding:8px 7px!important;font-size:11px!important;gap:4px!important}
+  .nav-icon .material-symbols-rounded{font-size:17px!important}
+  .main-area{padding:14px 14px 24px!important}
+  #page-settings .setup-card{padding:14px!important}
+  #page-settings .setup-step{min-height:100px!important;padding:9px!important}
+  #page-settings .setup-step small{font-size:10px!important}
+  #page-settings .settings-card{padding:14px!important}
+}
