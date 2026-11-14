@@ -26,3 +26,4 @@
  .speaker-link,.disconnect-button{min-height:48px}
  footer{font-size:9px;margin:16px 8px}
 }
+.code-entry{margin:18px 0 8px}.code-entry label{display:block;color:#ffb06b;font-size:9px;font-weight:800;letter-spacing:1.5px;margin-bottom:9px}.code-entry>div{display:flex;gap:8px}.code-entry input{min-width:0;flex:1;background:#091324;border:1px solid #455b7a;border-radius:13px;padding:15px;color:white;font:700 23px "Space Grotesk";letter-spacing:6px;text-align:center}.code-entry button{border:0;border-radius:13px;background:linear-gradient(100deg,#ffad58,#f16b32);color:#211621;padding:0 18px;font-weight:900;font-size:11px}.code-entry p{font-size:10px;color:#9aabc4;min-height:15px}
