@@ -1,13 +1,13 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
-const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85) };
+const state = { page:"home", voiceId:localStorage.getItem("rohanVoiceId")||"", voices:[], speed:Number(localStorage.getItem("rohanSpeed")||1), speak:localStorage.getItem("rohanSpeak")!=="false", wake:false, recognition:null, listening:false, recognitionRunning:false, recognitionStarting:false, restartTimer:null, restartDelay:700, wakeBuffer:"", wakeBufferAt:0, speaking:false, audio:null, musicAudio:null, musicOn:false, track:"library", audioCtx:null, musicNodes:[], musicStarted:0, scores:{you:0,ai:0,draw:0}, board:Array(9).fill(""), gameOver:false, assistantVolume:Number(localStorage.getItem("rohanVolume")||85), quiz:{active:false,phase:"",topic:"",index:0,score:0,questions:[]} };
 const tracks=[
  {id:"library",name:"Your music",desc:"Your Rohan AI MP3",src:"https://home.rohansweb.co.uk/ROHANAI/untitled-video-8_otfFPTjE.mp3",art:"graphic_eq"},
  {id:"soundhelix1",name:"SoundHelix One",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",art:"headphones"},
  {id:"soundhelix2",name:"SoundHelix Two",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",art:"music_note"},
  {id:"soundhelix3",name:"SoundHelix Three",desc:"Sample track from SoundHelix",src:"https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",art:"graphic_eq"}
 ];
-function go(page){state.page=page;$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const titles={home:"Good morning, Rohan",games:"Let's play a game",music:"Your music space",voice:"Voice studio",settings:"Settings"};$("#pageTitle").textContent=titles[page]||"Rohan AI";if(page==="voice"&&!state.voices.length)loadVoices();if(page==="games")renderBoard();if(page==="settings")syncSettings();window.scrollTo({top:0,behavior:"smooth"});}
+function go(page){state.page=page;$$(".page").forEach(p=>p.classList.toggle("active",p.id==="page-"+page));$$(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.page===page));const titles={home:"Good morning, Rohan",games:"Let's play a game",quiz:"Audio quiz",music:"Your music space",voice:"Voice studio",settings:"Settings"};$("#pageTitle").textContent=titles[page]||"Rohan AI";if(page==="voice"&&!state.voices.length)loadVoices();if(page==="games")renderBoard();if(page==="settings")syncSettings();window.scrollTo({top:0,behavior:"smooth"});}
 $$("[data-page]").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
 $("#quickSettings").onclick=()=>go("settings");
 $("#tellStoryButton").onclick=()=>tellStory();
@@ -36,13 +36,14 @@ async function speak(text){
     if(!response.ok)throw new Error((await response.json().catch(()=>({}))).error||"Cartesia speech failed");
     const blob=await response.blob();if(!blob.size)throw new Error("Cartesia returned empty audio");
     if(state.audio){state.audio.pause();if(state.audio.src.startsWith("blob:"))URL.revokeObjectURL(state.audio.src);}
-    const url=URL.createObjectURL(blob);state.audio=new Audio(url);state.audio.volume=state.assistantVolume/100;state.speaking=true;
-    state.audio.onended=()=>{URL.revokeObjectURL(url);finish();};
-    state.audio.onerror=()=>{URL.revokeObjectURL(url);$("#voiceNote").textContent="Cartesia audio could not be played. Try Preview voice again.";finish();};
-    setMood("speaking","ROHAN IS SPEAKING");await state.audio.play();
+    const url=URL.createObjectURL(blob),audio=new Audio(url);state.audio=audio;audio.volume=state.assistantVolume/100;state.speaking=true;
+    const ended=new Promise(resolve=>{audio.addEventListener("ended",resolve,{once:true});audio.addEventListener("error",resolve,{once:true});});
+    audio.onended=()=>{URL.revokeObjectURL(url);finish();};
+    audio.onerror=()=>{URL.revokeObjectURL(url);$("#voiceNote").textContent="Cartesia audio could not be played. Try Preview voice again.";finish();};
+    setMood("speaking","ROHAN IS SPEAKING");await audio.play();await ended;
   }catch(e){$("#voiceNote").textContent="Cartesia speech error: "+e.message;setMood("","CARTESIA SPEECH UNAVAILABLE");finish();}
 }
-function reply(text){addMessage(text);$("#orbHeading").textContent="I'm on it.";$("#orbSubtitle").textContent=text.length>65?text.slice(0,65)+"…":text;speak(text);}
+function reply(text){addMessage(text);$("#orbHeading").textContent="I'm on it.";$("#orbSubtitle").textContent=text.length>65?text.slice(0,65)+"…":text;return speak(text);}
 function cancelSpeech(mode="stop"){
   if(!state.audio)return;
   state.audio.pause();
@@ -54,6 +55,48 @@ function tellStory(){
   const story="Once upon a time, in a little village beside a sparkling blue river, lived a young fox called Rowan. Rowan was curious and loved helping others. One sunny morning, he found a tiny bird sitting beneath an old oak tree. The bird had lost its way home. Rowan listened carefully, then followed the bird's clues: past the flower meadow, over the little wooden bridge, and around the hill covered in purple heather. At the top, they heard a happy chorus of birds. The tiny bird's family was waiting in their nest. They chirped with joy and thanked Rowan for being kind. As the sun set, Rowan walked home feeling warm and proud. He had learned that even a small act of kindness can make a very big difference. And from that day on, whenever someone needed help, Rowan was ready for an adventure. The end.";
   reply(story);
 }
+
+const quizBank={
+ science:[{q:"What force pulls objects towards the Earth?",a:["gravity"]},{q:"What gas do humans need to breathe to stay alive?",a:["oxygen"]},{q:"What is the process called when liquid water turns into a gas?",a:["evaporation"]},{q:"Which part of a plant takes in water from the soil?",a:["roots","the roots"]}],
+ space:[{q:"Which star is at the centre of our solar system?",a:["the sun","sun"]},{q:"Which planet is known as the Red Planet?",a:["mars"]},{q:"What do we call a rock from space that lands on Earth?",a:["meteorite","a meteorite"]},{q:"What force keeps planets in orbit around the Sun?",a:["gravity"]}],
+ animals:[{q:"What is the largest animal on Earth?",a:["blue whale","the blue whale"]},{q:"What do caterpillars turn into?",a:["butterflies","a butterfly","moths"]},{q:"What is a baby frog called?",a:["tadpole","a tadpole"]},{q:"Which mammal can fly?",a:["bat","a bat"]}],
+ nature:[{q:"What do bees collect from flowers to make honey?",a:["nectar"]},{q:"What is the name for a baby tree growing from a seed?",a:["seedling","a seedling"]},{q:"Which part of a tree carries water from its roots to its leaves?",a:["trunk","the trunk","xylem"]},{q:"What do we call animals that are active at night?",a:["nocturnal","nocturnal animals"]}],
+ computing:[{q:"What does CPU stand for?",a:["central processing unit"]},{q:"What is the name for the physical parts of a computer?",a:["hardware"]},{q:"What do we call instructions written for a computer to follow?",a:["code","a program","program"]},{q:"Which two digits are used in binary?",a:["zero and one","0 and 1","ones and zeros"]}],
+ maths:[{q:"What is seven times eight?",a:["fifty six","56"]},{q:"How many sides does a hexagon have?",a:["six","6"]},{q:"What is one quarter of one hundred?",a:["twenty five","25"]},{q:"What is the name of a triangle with three equal sides?",a:["equilateral"]}],
+ history:[{q:"Which ancient civilisation built the pyramids at Giza?",a:["ancient egyptians","egyptians","the ancient egyptians"]},{q:"What was the name of the ship that carried the Pilgrims to America in 1620?",a:["mayflower","the mayflower"]},{q:"Which wall came down in 1989, symbolising the end of the Cold War?",a:["berlin wall","the berlin wall"]},{q:"Who was the first person to walk on the Moon?",a:["neil armstrong"]}],
+ geography:[{q:"What is the capital city of France?",a:["paris"]},{q:"Which is the largest ocean on Earth?",a:["pacific","pacific ocean","the pacific ocean"]},{q:"What is the imaginary line around the middle of Earth called?",a:["equator","the equator"]},{q:"Which continent is the Sahara Desert in?",a:["africa"]}]
+};
+const quizTopics=["science","space","animals","nature","computing","maths","history","geography"];
+function cleanQuizAnswer(v){return v.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
+function startAudioQuiz(){state.quiz={active:true,phase:"topic",topic:"",index:0,score:0,questions:[]};$("#quizHeading").textContent="I'm listening for a topic";$("#quizPrompt").textContent="Say “options” to hear the topics, or say a topic name now.";$("#quizProgress").textContent="Waiting for your topic";$("#quizScore").textContent="Score: 0";$("#quizHint").textContent="Listening starts now. Say “options” or a topic such as Space or Science.";$("#startAudioQuiz").textContent="Listening for topic…";startRecognition(false);}
+async function quizListenAgain(){if(!state.quiz.active)return;$("#startAudioQuiz").textContent="Listening…";startRecognition(false);}
+async function askQuizQuestion(){const q=state.quiz.questions[state.quiz.index];if(!q){await finishAudioQuiz();return;}state.quiz.phase="answer";$("#quizHeading").textContent=state.quiz.topic[0].toUpperCase()+state.quiz.topic.slice(1)+" quiz";$("#quizPrompt").textContent=q.q;$("#quizProgress").textContent="Question "+(state.quiz.index+1)+" of "+state.quiz.questions.length;$("#quizScore").textContent="Score: "+state.quiz.score;$("#quizHint").textContent="Listen to the question, then say your answer.";await speak("Question "+(state.quiz.index+1)+". "+q.q);quizListenAgain();}
+async function handleQuizUtterance(heard){
+ if(!state.quiz.active)return;const answer=cleanQuizAnswer(heard);
+ if(state.quiz.phase==="topic"&&/\b(options|option|topics|choices)\b/.test(answer)){
+  $("#quizHeading").textContent="Choose your topic";$("#quizPrompt").textContent="Say one of the topics: Science, Space, Animals, Nature, Computing, Maths, History or Geography.";$ ("#quizHint");
+  $("#quizHint").textContent="I'm listening for the topic name.";
+  await speak("Here are your options. Science, Space, Animals, Nature, Computing, Maths, History, or Geography. Say the topic you want.");quizListenAgain();return;
+ }
+ if(state.quiz.phase==="topic"){
+  const topic=quizTopics.find(t=>answer===t||answer.includes(t)||(t==="maths"&&answer.includes("math")));
+  if(!topic){await speak("I didn't catch a topic. Say options to hear the list, or say Science, Space, Animals, Nature, Computing, Maths, History, or Geography.");quizListenAgain();return;}
+  state.quiz.topic=topic;state.quiz.questions=quizBank[topic];state.quiz.index=0;state.quiz.score=0;
+  $("#quizHint").textContent="Topic selected: "+topic+". Get ready!";
+  await speak("Great choice. Let's do the "+topic+" quiz. There are four questions. Say your answer after each question.");await askQuizQuestion();return;
+ }
+ if(state.quiz.phase==="answer"){
+  const q=state.quiz.questions[state.quiz.index],correct=q.a.some(x=>answer===cleanQuizAnswer(x)||answer.includes(cleanQuizAnswer(x)));
+  if(correct)state.quiz.score++;$("#quizScore").textContent="Score: "+state.quiz.score;state.quiz.index++;
+  const feedback=correct?"That's correct!":"Not quite. The answer was "+q.a[0]+".";
+  if(state.quiz.index>=state.quiz.questions.length){await speak(feedback);await finishAudioQuiz();}
+  else{await speak(feedback);await askQuizQuestion();}
+ }
+}
+async function finishAudioQuiz(){const score=state.quiz.score,total=state.quiz.questions.length,topic=state.quiz.topic;state.quiz.active=false;state.quiz.phase="";$("#quizHeading").textContent="Quiz complete!";$("#quizPrompt").textContent="You scored "+score+" out of "+total+" in "+topic+"." ;$("#quizProgress").textContent="Finished";$("#quizScore").textContent="Score: "+score+" / "+total;$("#quizHint").textContent="Choose Start audio quiz to play again.";$("#startAudioQuiz").textContent="Play again";await speak("Quiz complete! You scored "+score+" out of "+total+". Well done!");}
+$("#startAudioQuiz").onclick=startAudioQuiz;
+$("#stopAudioQuiz").onclick=()=>{state.quiz.active=false;state.quiz.phase="";stopRecognition();$("#quizHeading").textContent="Quiz ended";$("#quizPrompt").textContent="Press Start audio quiz whenever you are ready.";$("#quizProgress").textContent="No quiz started";$("#startAudioQuiz").textContent="Start audio quiz";};
+
 function handleCommand(raw){
   const text=raw.trim();if(!text)return;
   const t=text.toLowerCase().replace(/[.!?]/g,"").trim();
@@ -169,7 +212,8 @@ function speechRecognition(){
       }
     }else{
       stopRecognition();
-      handleCommand(heard);
+      if(state.quiz.active)handleQuizUtterance(heard);
+      else handleCommand(heard);
     }
   };
   rec.onerror=e=>{
@@ -277,34 +321,30 @@ async function loadStatus(){
   }catch{$("#connectionText").textContent="Server unavailable";$("#keyStatus").textContent="Server unavailable";}
 }
 async function loadVoices(){
-  const list=$("#voiceList");list.innerHTML='<div class="loading-line">Connecting to Cartesia…</div>';
-  $("#voiceNote").textContent="Loading your single Cartesia voice…";
-  try{
-    const r=await fetch("/api/voices",{cache:"no-store"}),d=await r.json();
-    if(!r.ok)throw new Error(d.error||"Cartesia voice service is unavailable");
-    const voice=d.voice;
-    if(!voice||!voice.id)throw new Error("Cartesia did not return a voice. Check your API key and account.");
-    state.voices=[voice];state.voiceId=voice.id;localStorage.setItem("rohanVoiceId",voice.id);renderVoices();
-    $("#voiceNote").textContent="One Cartesia voice is selected for every spoken reply.";
-  }catch(e){
-    state.voices=[];state.voiceId="";localStorage.removeItem("rohanVoiceId");list.innerHTML="";
-    const p=document.createElement("div");p.className="loading-line";p.textContent="Could not load the Cartesia voice: "+e.message;list.append(p);
-    $("#voiceNote").textContent=e.message.includes("401")?"Cartesia rejected the server API key. In Render, replace CARTESIA_API_KEY with a fresh key beginning sk_car_, save, and redeploy. No browser voice fallback is enabled.":"Cartesia must connect before spoken replies can work. No browser voice fallback is enabled.";
-    $("#voiceScreenTitle").textContent="Cartesia voice connection failed";
-    $("#voiceScreenText").textContent=$("#voiceNote").textContent;
-  }
+ const list=$("#voiceList");list.innerHTML='<div class="loading-line">Connecting to Cartesia…</div>';
+ try{
+  const r=await fetch("/api/voices",{cache:"no-store"}),d=await r.json();if(!r.ok)throw new Error(d.error||"Cartesia voice service is unavailable");
+  const voices=Array.isArray(d.voices)&&d.voices.length?d.voices:(d.voice?[d.voice]:[]);
+  if(!voices.length)throw new Error("Cartesia did not return any voices.");
+  state.voices=voices;const saved=localStorage.getItem("rohanVoiceId");
+  state.voiceId=voices.some(v=>v.id===saved)?saved:voices[0].id;localStorage.setItem("rohanVoiceId",state.voiceId);
+  renderVoices();renderSetupVoiceOptions();$("#voiceNote").textContent=voices.length+" Cartesia voice"+(voices.length===1?" is":"s are")+" available.";
+ }catch(e){
+  state.voices=[];list.innerHTML="";const p=document.createElement("div");p.className="loading-line";p.textContent="Could not load the Cartesia voices: "+e.message;list.append(p);
+  $("#welcomeVoiceSelect").innerHTML='<option value="">Voice service unavailable</option>';$("#welcomeVoiceStatus").textContent="Check the Cartesia connection in Render, then refresh.";
+  $("#voiceNote").textContent=e.message;$("#voiceScreenTitle").textContent="Cartesia voice connection failed";$("#voiceScreenText").textContent=e.message;
+ }
 }
-function renderVoices(){
-  const list=$("#voiceList");list.innerHTML="";
-  state.voices.slice(0,1).forEach(v=>{
-    const item=document.createElement("div");item.className="voice-option selected";
-    const radio=document.createElement("span");radio.className="voice-radio";
-    const details=document.createElement("span");const name=document.createElement("strong");name.textContent=v.name||"Rohan's Cartesia voice";
-    const desc=document.createElement("small");desc.textContent="Cartesia · Sonic 3.6 · English";
-    details.append(name,desc);item.append(radio,details);list.append(item);
-  });
-}
+function chooseVoice(id){if(!state.voices.some(v=>v.id===id))return;state.voiceId=id;localStorage.setItem("rohanVoiceId",id);renderVoices();renderSetupVoiceOptions();}
+function renderSetupVoiceOptions(){const select=$("#welcomeVoiceSelect");if(!select)return;select.innerHTML="";state.voices.forEach(v=>{const o=document.createElement("option");o.value=v.id;o.textContent=v.name||"Cartesia voice";select.append(o);});select.value=state.voiceId;$("#welcomeVoiceStatus").textContent=state.voices.length+" Cartesia voice"+(state.voices.length===1?"":"s")+" available.";}
+function renderVoices(){const list=$("#voiceList");list.innerHTML="";state.voices.forEach(v=>{const item=document.createElement("button");item.type="button";item.className="voice-option"+(v.id===state.voiceId?" selected":"");item.onclick=()=>chooseVoice(v.id);const radio=document.createElement("span");radio.className="voice-radio";const details=document.createElement("span");const name=document.createElement("strong");name.textContent=v.name||"Cartesia voice";const desc=document.createElement("small");desc.textContent="Cartesia · Sonic 3.6 · English";details.append(name,desc);item.append(radio,details);list.append(item);});}
 $("#refreshVoices").onclick=loadVoices;$("#previewVoice").onclick=()=>{if(!state.voiceId){$("#voiceNote").textContent="Wait for the Cartesia voice to load first.";return;}speak("Hello, Rohan. It is lovely to speak with you. I can help you with games, music, stories and the time. What shall we do today?");};
+function setAccent(accent){const v=["blue","orange","green","pink"].includes(accent)?accent:"blue";document.body.dataset.accent=v;localStorage.setItem("rohanAccent",v);$(".accent-choice").forEach(b=>b.classList.toggle("selected",b.dataset.accent===v));}
+$(".accent-choice").forEach(b=>b.onclick=()=>setAccent(b.dataset.accent));
+$("#welcomeVoiceSelect").onchange=e=>chooseVoice(e.target.value);
+$("#finishSetup").onclick=()=>{if($("#welcomeVoiceSelect").value)chooseVoice($("#welcomeVoiceSelect").value);localStorage.setItem("rohanSetupComplete","true");$("#welcomeSetup").classList.add("hidden");$("#orbSubtitle").textContent="All set. Press Start Listening whenever you want to talk.";reply("You're all set! I've saved your voice and colour choices. What would you like to do?");};
+function showWelcomeSetup(){setAccent(localStorage.getItem("rohanAccent")||"blue");renderSetupVoiceOptions();if(localStorage.getItem("rohanSetupComplete")!=="true")$("#welcomeSetup").classList.remove("hidden");}
+
 const winning=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 function renderBoard(){const board=$("#board");board.innerHTML="";state.board.forEach((v,i)=>{const b=document.createElement("button");b.className="cell "+(v==="O"?"o":"");b.textContent=v;b.disabled=!!v||state.gameOver;b.setAttribute("aria-label","Square "+(i+1)+(v?", "+v:""));b.onclick=()=>playMove(i);board.append(b);});$("#scoreLine").innerHTML="You "+state.scores.you+" <b>·</b> AI "+state.scores.ai+" <b>·</b> Draws "+state.scores.draw;}
 function winner(board,mark){return winning.some(line=>line.every(i=>board[i]===mark));}
@@ -382,5 +422,5 @@ $$(".track-card").forEach(b=>b.onclick=()=>selectTrack(b.dataset.track,true));
 $("#playMusic").onclick=()=>{if(state.musicOn)stopMusic();else startMusic();};
 $("#musicVolume").oninput=e=>{musicElement.volume=Number(e.target.value)/100;};
 function updateClock(){$("#clock").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});const h=new Date().getHours();$("#dateLabel").textContent=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"}).toUpperCase();if(state.page==="home")$("#pageTitle").textContent=h<12?"Good morning, Rohan":h<18?"Good afternoon, Rohan":"Good evening, Rohan";}
-setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();
+setInterval(updateClock,15000);updateClock();loadStatus();loadVoices();syncSettings();showWelcomeSetup();
 // The microphone stays off until the user presses Start Listening. No wake word is required.
