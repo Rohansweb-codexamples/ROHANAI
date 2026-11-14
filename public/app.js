@@ -264,7 +264,7 @@ function handleCommand(raw){
   }
   if(/^(hello|hi|spark|good morning|good afternoon|good evening)$/.test(t)){reply("Hello! What would you like to do?");return;}
   if(/(what can you do|help|commands)/.test(t)){reply("I can open games, play music, tell you the time and date, change settings, and tell you a story. Try saying tell me a story, open games, play music, or what time is it.");return;}
-  if(/(tell me the time|what(?:'s| is) the time|what time is it|time is it|current time|time please)/.test(t)){reply("It's "+new Date().toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit"})+".");return;}
+  if(/(tell me the time|what(?:'s| is) the time|whats the time|what time is it|time is it|current time|time please)/.test(t)){reply("It's "+new Date().toLocaleTimeString("en-GB",{hour:"numeric",minute:"2-digit"})+".");return;}
   if(/(what day|date is it|today's date)/.test(t)){reply("Today is "+new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+".");return;}
   if(/(open|go to|show).*(game|nought|tic tac toe)/.test(t)||/play (a )?game|noughts and crosses|tic tac toe/.test(t)){go("games");reply("Let's play noughts and crosses. You're X. Tap a square to make your move.");return;}
   const musicCommand=t.replace(/^(?:prism|rohan|rowan)[, ]+/,"").trim();
@@ -319,7 +319,8 @@ function speechRecognition(){
     for(let i=e.resultIndex;i<e.results.length;i++){
       const result=e.results[i];
       if(!result.isFinal)continue;
-      const heard=Array.from(result).map(x=>x.transcript||"").join(" ").trim();
+      const alternatives=Array.from(result).map(x=>(x.transcript||"").trim()).filter(Boolean);
+      const heard=(alternatives.find(x=>/\\bspark\\b/i.test(x))||alternatives[0]||"").trim();
       if(!heard)continue;
       if(state.speaking){
         if(/\b(stop|pause|wait|hold on)\b/i.test(heard))handleCommand(heard);
